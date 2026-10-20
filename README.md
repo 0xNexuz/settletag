@@ -27,6 +27,14 @@ npm run dev
 
 The interface opens locally, but live invoice actions need a deployed contract. Set `VITE_CONTRACT_ADDRESS` in `.env` to an authorized Mezo testnet deployment address, then restart Vite. Do not paste a private key into `.env` because Vite exposes variables prefixed with `VITE_` to the browser.
 
+## Test wallet and faucet
+
+The Wallet sheet can create a dedicated Mezo testnet EVM wallet in your browser. Enter a unique password of at least 12 characters, save the recovery phrase shown once, and download the encrypted JSON backup. The encrypted key is stored in this browser's local storage; clearing site data removes it. The password and phrase are not sent to SettleTag. You can also connect an existing browser wallet on Mezo testnet.
+
+Copy the wallet's public address from the Wallet or Faucet sheet, then request test BTC at the [official Mezo faucet](https://faucet.test.mezo.org/). Complete its CAPTCHA yourself. The faucet also offers test MEZO; it does not dispense MUSD. To acquire test MUSD, use the [Mezo testnet borrow app](https://testnet.mezo.org/feature/borrow) with test BTC collateral and a compatible browser wallet. The embedded wallet can send test BTC and MUSD to another Mezo testnet address, with a review step before signing. No tokens are requested automatically, and the app does not claim a funded balance until the RPC confirms it.
+
+Do not send mainnet funds to a test wallet. Do not share the password or recovery phrase.
+
 ## Testnet deployment (requires separate authorization and a testnet wallet)
 
 `scripts/deploy.js` checks Mezo testnet chain ID `31611` and the official testnet MUSD token at `0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503`. It reads `DEPLOYER_PRIVATE_KEY` from the local shell and never writes it to a file. Do not run deployment until authorized.
@@ -49,7 +57,7 @@ The merchant can cancel an open invoice. An expired invoice cannot be paid. Dupl
 
 ## Limits and next milestones
 
-- **Current milestone:** local contract, tests, and wallet interface.
+- **Current milestone:** local contract, tests, spreadsheet-inspired interface, encrypted browser test wallet, and faucet handoff.
 - **Next:** authorized testnet deployment, real MUSD funding and payment, explorer receipt, and end-to-end browser verification.
 - **Then:** user testing with a merchant, clearer invoice descriptions stored offchain with their content hash, and submission materials (deck, two-minute video, public repo).
 - This prototype is unaudited and not ready for mainnet. It does not calculate tax, fiat value, refunds, or disputes.

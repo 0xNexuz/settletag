@@ -1,69 +1,21 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#0f172a" />
-    <title>SettleTag — MUSD invoices with proof</title>
-  </head>
-  <body>
-    <div id="app">
-      <header class="topbar">
-        <a class="brand" href="/"><span class="brand-mark">S</span><span>SettleTag</span></a>
-        <div class="network"><span class="pulse"></span> Mezo testnet</div>
-        <button id="connect" class="button button-outline" type="button">Connect wallet</button>
-      </header>
-
-      <main>
-        <section class="hero">
-          <div class="eyebrow">MUSD PAYMENT INFRASTRUCTURE <span>·</span> TRACK 2</div>
-          <h1>Every payment<br /><em>has a purpose.</em></h1>
-          <p>Create a one-time MUSD invoice, pay it directly to the merchant, and verify the receipt onchain. No custody. No ambiguous transfer matching.</p>
-          <div class="hero-pills"><span>Exact amounts</span><span>One-time settlement</span><span>Onchain receipt</span></div>
-        </section>
-
-        <section class="workspace" aria-labelledby="workspace-title">
-          <div class="section-head">
-            <div><div class="eyebrow">WORKSPACE</div><h2 id="workspace-title">Invoice console</h2></div>
-            <span id="wallet-status" class="wallet-status">Wallet disconnected</span>
-          </div>
-          <div id="setup-note" class="notice" hidden></div>
-          <div id="message" class="notice" role="status" aria-live="polite" hidden></div>
-          <div class="panels">
-            <form id="create-form" class="panel">
-              <div class="panel-number">01 / MERCHANT</div>
-              <h3>Create invoice</h3>
-              <p>Publish a reference and amount on Mezo testnet. The payer sends MUSD straight to your wallet.</p>
-              <label for="amount">Amount in MUSD</label>
-              <div class="input-wrap"><input id="amount" name="amount" inputmode="decimal" placeholder="25.00" required /><span>MUSD</span></div>
-              <label for="expiry">Expires in</label>
-              <select id="expiry" name="expiry"><option value="1">1 day</option><option value="7" selected>7 days</option><option value="30">30 days</option></select>
-              <button class="button button-primary" type="submit">Create invoice <span aria-hidden="true">↗</span></button>
-              <div id="created" class="result" hidden><strong>Invoice created</strong><p>Share this link with your payer.</p><input id="share-link" aria-label="Invoice share link" readonly /><button id="copy-link" class="text-button" type="button">Copy link</button></div>
-            </form>
-            <div class="panel">
-              <div class="panel-number">02 / PAYER</div>
-              <h3>Pay or verify</h3>
-              <p>Enter an invoice reference to see the merchant, amount and settlement status before paying.</p>
-              <label for="invoice-id">Invoice reference</label>
-              <input id="invoice-id" spellcheck="false" placeholder="0x..." />
-              <button id="lookup" class="button button-secondary" type="button">Look up invoice <span aria-hidden="true">→</span></button>
-              <div id="invoice-details" class="result" hidden>
-                <div class="detail-row"><span>Status</span><strong id="detail-status"></strong></div>
-                <div class="detail-row"><span>Amount</span><strong id="detail-amount"></strong></div>
-                <div class="detail-row"><span>Merchant</span><code id="detail-merchant"></code></div>
-                <div class="detail-row"><span>Expires</span><strong id="detail-deadline"></strong></div>
-                <div class="detail-row"><span>Payer</span><code id="detail-payer"></code></div>
-                <button id="pay" class="button button-primary" type="button" hidden>Approve and pay MUSD <span aria-hidden="true">↗</span></button>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section class="how"><div class="eyebrow">THE FLOW</div><div class="steps"><div><b>01</b><h3>Merchant sets terms</h3><p>A unique invoice reference binds the amount, merchant and deadline.</p></div><div><b>02</b><h3>Payer confirms</h3><p>The wallet approves the exact MUSD amount, then pays once.</p></div><div><b>03</b><h3>Anyone verifies</h3><p>The payment event and contract state provide a public receipt.</p></div></div></section>
-      </main>
-      <footer><span>SettleTag · Mezo testnet prototype</span><a href="https://explorer.test.mezo.org" target="_blank" rel="noreferrer">Mezo explorer ↗</a></footer>
-    </div>
-    <script type="module" src="/src/main.js"></script>
-  </body>
+<head><meta charset="UTF-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /><meta name="theme-color" content="#176448" /><title>SettleTag — The MUSD workbook</title></head>
+<body>
+  <div class="workbook">
+    <header class="office-head">
+      <div class="brand-row"><a class="brand" href="/"><span class="brand-tile">S</span><strong>SettleTag</strong><span class="brand-suffix">/ MUSD workbook</span></a><span class="head-right"><span class="online-dot"></span> MEZO TESTNET <span class="head-divider">│</span> CHAIN 31611</span></div>
+      <nav class="menu-tabs" aria-label="Workbook menu"><button type="button" class="menu-tab" data-view="overview">File</button><button type="button" class="menu-tab active" data-view="overview">Home</button><button type="button" class="menu-tab" data-view="invoices">Invoices</button><button type="button" class="menu-tab" data-view="wallet">Wallet</button><button type="button" class="menu-tab" data-view="faucet">Faucet</button><button type="button" class="menu-tab" data-view="overview">Review</button><button type="button" class="menu-tab" data-view="overview">View</button></nav>
+      <div class="ribbon" aria-label="Quick actions"><div class="ribbon-group"><button type="button" data-view="invoices" class="ribbon-action"><span class="ribbon-icon">＋</span><span>New invoice</span></button><button type="button" data-view="invoices" class="ribbon-action"><span class="ribbon-icon">⌕</span><span>Find receipt</span></button><div class="ribbon-caption">Invoices</div></div><div class="ribbon-group"><button type="button" data-view="wallet" class="ribbon-action"><span class="ribbon-icon">▣</span><span>My wallet</span></button><button type="button" data-view="wallet" class="ribbon-action"><span class="ribbon-icon">↗</span><span>Send tokens</span></button><div class="ribbon-caption">Payments</div></div><div class="ribbon-group"><button type="button" data-view="faucet" class="ribbon-action"><span class="ribbon-icon">◈</span><span>Get test BTC</span></button><a class="ribbon-action" href="https://explorer.test.mezo.org/" target="_blank" rel="noreferrer"><span class="ribbon-icon">↗</span><span>Explorer</span></a><div class="ribbon-caption">Testnet</div></div><div class="ribbon-note"><span class="ribbon-note-label">ACTIVE NETWORK</span><strong>Mezo testnet</strong><small>Real onchain receipts after deployment</small></div></div>
+    </header>
+    <div class="formula"><div class="name-box">ST · 01 <span>▾</span></div><div class="formula-icons">× &nbsp; ✓ &nbsp; <i>fx</i></div><div class="formula-text">=MUSD_PAYMENT_REFERENCE(merchant, amount, deadline)</div></div>
+    <main class="sheet-frame"><div class="corner" aria-hidden="true"></div><div class="col-head" aria-hidden="true"><span>A</span><span>B</span><span>C</span><span>D</span><span>E</span><span>F</span><span>G</span><span>H</span></div><div class="row-head" aria-hidden="true"></div><div class="sheet-canvas"><div class="cell-art"><img src="/pixel-statue.png" alt="Pixel art figure in orange and navy" width="474" height="842" /><div class="art-overlay"><span>SETTLETAG / 001</span><strong>Proof in<br />every cell.</strong><p>A payment workspace for the Bitcoin economy.</p></div></div><div class="sheet-content"><div class="eyebrow">MUSD TRANSACTION WORKBOOK <span>•</span> MEZO TESTNET</div><div id="message" class="message" role="status" aria-live="polite" hidden></div><div id="config-note" class="message config-note" hidden></div>
+      <section class="sheet-view" data-panel="overview"><div class="view-number">SHEET 01 / OVERVIEW</div><h1>Build the receipt<br /><em>into the payment.</em></h1><p class="lead">SettleTag gives every MUSD payment an exact invoice, a one-time settlement, and a public receipt. The money travels directly from payer to merchant.</p><div class="hero-actions"><button type="button" data-view="invoices" class="primary-btn">Open invoice sheet <span>↗</span></button><button type="button" data-view="wallet" class="outline-btn">Create test wallet</button></div><div class="stat-grid"><div><small>01 / REFERENCE</small><strong>Unique ID</strong><span>One invoice, one payment</span></div><div><small>02 / SETTLEMENT</small><strong>Direct</strong><span>MUSD to merchant</span></div><div><small>03 / EVIDENCE</small><strong>Onchain</strong><span>Explorer-verifiable event</span></div></div><div class="build-note"><b>BUILD STATUS</b><span>Contract and interface built locally. Live Mezo testnet deployment and MUSD settlement are pending.</span></div></section>
+      <section class="sheet-view" data-panel="invoices" hidden><div class="view-number">SHEET 02 / INVOICES</div><h2>Invoice ledger<span class="accent-square">■</span></h2><p class="view-desc">Create a one-time payment reference or load a receipt from Mezo testnet.</p><div class="form-grid"><form id="create-form" class="cell-card"><div class="card-label">A1 : MERCHANT</div><h3>Create invoice</h3><label for="amount">MUSD amount</label><div class="input-unit"><input id="amount" name="amount" inputmode="decimal" placeholder="25.00" required /><span>MUSD</span></div><label for="expiry">Expires in</label><select id="expiry" name="expiry"><option value="1">1 day</option><option value="7" selected>7 days</option><option value="30">30 days</option></select><button class="primary-btn full" type="submit">Create invoice ↗</button><div id="created" class="result" hidden><strong>Invoice created onchain</strong><label for="share-link">Shareable invoice link</label><input id="share-link" readonly /><button id="copy-link" class="link-btn" type="button">Copy link</button></div></form><div class="cell-card"><div class="card-label">E1 : PAYER / REVIEWER</div><h3>Find a receipt</h3><label for="invoice-id">Invoice reference</label><input id="invoice-id" spellcheck="false" placeholder="0x..." /><button id="lookup" class="dark-btn full" type="button">Look up invoice →</button><div id="invoice-details" class="result" hidden><div class="detail-row"><span>Status</span><strong id="detail-status"></strong></div><div class="detail-row"><span>Amount</span><strong id="detail-amount"></strong></div><div class="detail-row"><span>Merchant</span><code id="detail-merchant"></code></div><div class="detail-row"><span>Expires</span><strong id="detail-deadline"></strong></div><div class="detail-row"><span>Payer</span><code id="detail-payer"></code></div><button id="pay" class="primary-btn full" type="button" hidden>Approve and pay MUSD ↗</button></div></div></div></section>
+      <section class="sheet-view" data-panel="wallet" hidden><div class="view-number">SHEET 03 / WALLET</div><h2>Test wallet<span class="accent-square">■</span></h2><p class="view-desc">A dedicated browser wallet for Mezo testnet. Its encrypted key stays in this browser; the password is never sent to SettleTag.</p><div class="wallet-strip"><div><small>ACTIVE ACCOUNT</small><strong id="wallet-address">No wallet selected</strong></div><div><small>TEST BTC</small><strong id="btc-balance">—</strong></div><div><small>TEST MUSD</small><strong id="musd-balance">—</strong></div></div><div class="form-grid"><div class="cell-card"><div class="card-label">A1 : CREATE OR UNLOCK</div><h3>Local test wallet</h3><p class="helper">Use a unique password. Save the recovery phrase before closing this page. Never send mainnet funds to this wallet.</p><label for="wallet-password">Wallet password</label><input id="wallet-password" type="password" autocomplete="new-password" placeholder="At least 12 characters" /><button id="create-wallet" class="primary-btn full" type="button">Create encrypted wallet</button><button id="unlock-wallet" class="dark-btn full" type="button" hidden>Unlock wallet</button><div id="recovery" class="recovery" hidden><strong>Recovery phrase — write this down now</strong><p id="recovery-phrase"></p><button id="hide-recovery" type="button" class="link-btn">I saved it — hide phrase</button></div></div><div class="cell-card"><div class="card-label">E1 : SEND TEST TOKENS</div><h3>Send</h3><p class="helper">Send test BTC or MUSD to an EVM address on Mezo testnet. This signs a real testnet transaction.</p><label for="send-token">Token</label><select id="send-token"><option value="BTC">Test BTC</option><option value="MUSD">Test MUSD</option></select><label for="send-to">Recipient address</label><input id="send-to" spellcheck="false" placeholder="0x..." /><label for="send-amount">Amount</label><input id="send-amount" inputmode="decimal" placeholder="0.001" /><button id="send-tokens" class="primary-btn full" type="button">Review transfer →</button><div id="send-review" class="send-review" hidden><strong>Confirm testnet transfer</strong><p id="send-summary"></p><button id="confirm-send" class="dark-btn full" type="button">Confirm and send ↗</button><button id="cancel-send" class="link-btn" type="button">Cancel</button></div></div></div><div class="wallet-footer"><button id="refresh-wallet" class="link-btn" type="button">Refresh balances</button><button id="copy-address" class="link-btn" type="button">Copy address</button><button id="backup-wallet" class="link-btn" type="button">Download encrypted backup</button><button id="connect-browser" class="link-btn" type="button">Use browser wallet instead</button></div></section>
+      <section class="sheet-view" data-panel="faucet" hidden><div class="view-number">SHEET 04 / TESTNET FUNDING</div><h2>Fund the test<span class="accent-square">■</span></h2><p class="view-desc">The official Mezo faucet issues test BTC and MEZO. MUSD is minted by borrowing against test BTC.</p><div class="funding-steps"><div class="funding-step"><b>01</b><div><h3>Copy wallet address</h3><p id="faucet-address">Create or unlock a test wallet first.</p><button id="copy-faucet-address" class="link-btn" type="button">Copy address</button></div></div><div class="funding-step"><b>02</b><div><h3>Request test BTC</h3><p>Paste the address into the official faucet and complete its CAPTCHA. The faucet also offers test MEZO.</p><a class="primary-btn" href="https://faucet.test.mezo.org/" target="_blank" rel="noreferrer">Open official faucet ↗</a></div></div><div class="funding-step"><b>03</b><div><h3>Get test MUSD</h3><p>Connect a compatible wallet to Mezo testnet and borrow MUSD against test BTC in the Mezo app. The faucet does not dispense MUSD.</p><a class="dark-btn" href="https://testnet.mezo.org/feature/borrow" target="_blank" rel="noreferrer">Open MUSD borrow ↗</a></div></div></div><p class="faucet-footnote">The embedded test wallet can send tokens in SettleTag. Mezo’s borrow app may require a browser wallet extension. For borrowing, using a separate extension account is simpler than importing this wallet’s recovery phrase.</p></section>
+    </div></div></main>
+    <footer class="statusbar"><div class="sheet-tabs"><button type="button" data-view="overview" class="sheet-tab active">Overview</button><button type="button" data-view="invoices" class="sheet-tab">Invoices</button><button type="button" data-view="wallet" class="sheet-tab">Wallet</button><button type="button" data-view="faucet" class="sheet-tab">Faucet</button></div><span id="footer-status">READY · LOCAL BUILD</span></footer>
+  </div><script type="module" src="/src/main.js"></script>
+</body>
 </html>

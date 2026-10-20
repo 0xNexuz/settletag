@@ -15,7 +15,7 @@
 - **HEAD:** Local prototype commit `ddc2d6a`; check `git log -1` after later context updates.
 - **Working tree:** Clean immediately after the prototype commit; recheck on continuation.
 - **Remote:** None. No push has been authorized.
-- **Last verified milestone:** Contract tests and production web build passed locally on 2026-10-20.
+- **Last verified milestone:** Contract and encrypted-wallet tests (4 total) and production web build passed locally on 2026-10-20.
 
 ## Hackathon Context
 
@@ -32,12 +32,13 @@
 - Use Mezo testnet chain ID 31611 and official testnet MUSD address `0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503`, from [Mezo documentation](https://mezo.org/docs/users/resources/contracts-reference).
 - No custody: the contract uses `transferFrom(payer, merchant, amount)` and records a one-time receipt.
 - Local mock-token testing comes before any external deployment. Testnet deployment needs separate approval.
+- User requested the frontend combine a pixel-art statue and Excel-like spreadsheet reference, with SettleTag copy, plus a test-token wallet and official faucet path.
 
 ## Progress
 
-- **Verified locally:** Solidity invoice contract compiled, 2 local EVM tests passed with mock MUSD, Vite production build passed.
-- **Implemented, unverified:** Wallet interface against a deployed Mezo testnet contract; deployment script.
-- **Pending:** Inspect the interface; deploy and test real MUSD only after authorization; prepare final submission assets.
+- **Verified locally:** Solidity invoice contract compiled, 2 local EVM tests passed with mock MUSD, 2 encrypted-wallet tests passed, Vite production build passed.
+- **Implemented, unverified live:** Spreadsheet frontend using the supplied pixel art, local encrypted browser wallet with recovery phrase and backup, test BTC/MUSD balance reads and send flow, browser wallet option, official faucet and MUSD borrow links, invoice interface, deployment script.
+- **Pending:** Live browser visual check (computer-use URL policy blocked observation), user-created wallet/address, faucet CAPTCHA and actual token receipt, authorized deployment and real MUSD settlement, final submission assets.
 - **Blocker:** No authorization or credentials for testnet deployment. No live-chain receipt exists yet.
 
 ## Verification Log
@@ -48,6 +49,9 @@
 | 2026-10-20 | `npm install --no-audit --no-fund --fetch-retries=4 --fetch-timeout=60000` | PASS; 370 packages added |
 | 2026-10-20 | `npm test` | PASS; compiled both contracts; 2 local EVM tests passed with mock MUSD |
 | 2026-10-20 | `npm run build` | PASS; Vite production bundle built |
+| 2026-10-20 | `npm test` after wallet/frontend changes | PASS; 4 tests: 2 contract, 2 wallet |
+| 2026-10-20 | `npm run build` after redesign | PASS; Vite production bundle built |
+| 2026-10-20 | In-app browser visual inspection | Blocked by browser URL policy; no visual sign-off claimed |
 
 ## Decision Log
 
@@ -61,6 +65,6 @@
 
 ## Next Action
 
-1. Finish installation and run `npm test` and `npm run build`.
-2. Fix failures and record exact results.
+1. User creates/unlocks the test wallet in the local app, backs up its recovery phrase, and completes the official faucet CAPTCHA. Verify the funded balance.
+2. Review the live interface visually when browser access is available; address any issues.
 3. Request authorization only when ready for Mezo testnet deployment; no keys are stored in the project.
