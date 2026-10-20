@@ -2,7 +2,7 @@
 
 **MUSD invoice references with direct settlement and verifiable receipts on Mezo testnet.**
 
-SettleTag is a Track 2 (access and distribution) prototype for the October–November 2026 Mezo Buildathon. A merchant creates a one-time invoice onchain. A payer approves the exact MUSD amount and pays; MUSD goes directly from payer to merchant while the contract records the payer and emits an `InvoicePaid` event. The contract never holds funds.
+SettleTag is a Mezo testnet prototype. A merchant creates a one-time invoice onchain. A payer approves the exact MUSD amount and pays; MUSD goes directly from payer to merchant while the contract records the payer and emits an `InvoicePaid` event. The contract never holds funds.
 
 ## Status
 
@@ -25,7 +25,7 @@ npm test
 npm run dev
 ```
 
-The deployed contract address is in `.env.example`. Copy it into a local `.env` as `VITE_CONTRACT_ADDRESS`, then restart Vite for live invoice actions. Do not paste a private key into `.env` because Vite exposes variables prefixed with `VITE_` to the browser.
+The app defaults to the deployed Mezo testnet contract. To point a local build at another deployment, copy `.env.example` into `.env`, change `VITE_CONTRACT_ADDRESS`, and restart Vite. Do not paste a private key into `.env` because Vite exposes variables prefixed with `VITE_` to the browser.
 
 ## Test wallet and faucet
 
@@ -66,10 +66,6 @@ The merchant can cancel an open invoice. An expired invoice cannot be paid. Dupl
 ## Limits and next milestones
 
 - **Current milestone:** deployed contract, real 1 MUSD payment, onchain receipt, local tests, spreadsheet-inspired interface, encrypted browser test wallet, and faucet handoff.
-- **Next:** end-to-end browser verification when the local browser URL is accessible, then user testing with a merchant.
-- **Then:** clearer invoice descriptions stored offchain with their content hash, and submission materials (deck, two-minute video, public repo).
+- **Next:** browser verification and user testing with a merchant.
+- **Later:** clearer invoice descriptions stored offchain with their content hash.
 - This prototype is unaudited and not ready for mainnet. It does not calculate tax, fiat value, refunds, or disputes.
-
-## Buildathon evidence
-
-The [AKINDO Mezo Buildathon](https://app.akindo.io/wave-hacks/OVOO0gdrVU8379D10) requires MUSD or MEZO integration, a working supported-chain deployment, public GitHub repository, deck and two-minute pitch video. The live integration and deployment are verified. The public repo, deck, video, and submission remain to be prepared.

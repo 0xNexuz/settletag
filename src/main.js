@@ -7,7 +7,7 @@ const CHAIN = 31611n;
 const RPC = 'https://rpc.test.mezo.org';
 const EXPLORER = 'https://explorer.test.mezo.org';
 const MUSD = '0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503';
-const CONTRACT = import.meta.env.VITE_CONTRACT_ADDRESS?.trim();
+const CONTRACT = import.meta.env.VITE_CONTRACT_ADDRESS?.trim() || '0x53eCBb8891Df17927d40E4FbF234a80cB82EC456';
 const tokenAbi = ['function balanceOf(address) view returns (uint256)', 'function allowance(address,address) view returns (uint256)', 'function approve(address,uint256) returns (bool)', 'function transfer(address,uint256) returns (bool)'];
 const $ = (id) => document.getElementById(id);
 const rpc = new ethers.JsonRpcProvider(RPC);

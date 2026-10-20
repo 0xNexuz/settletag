@@ -5,7 +5,7 @@
 - **Name:** SettleTag
 - **Location:** `outputs/settletag` in this task workspace
 - **Purpose:** One-time MUSD invoices with direct merchant settlement and onchain receipts.
-- **Current stage:** LIVE TESTNET VERIFICATION / SUBMISSION PREPARATION
+- **Current stage:** LIVE TESTNET VERIFICATION / PUBLIC WEB RELEASE
 - **Status:** Contract deployment, Mezo borrow, 1 MUSD direct settlement, and onchain receipt VERIFIED; browser UI visual check outstanding
 - **Last updated:** 2026-10-20
 
@@ -14,16 +14,8 @@
 - **Branch:** `master` (local repository).
 - **HEAD:** Local live-testnet milestone committed; check `git log -1` for the current hash.
 - **Working tree:** Clean after the milestone commit; recheck on continuation. Local secrets and `.env.local` are ignored.
-- **Remote:** None. No push has been authorized.
+- **Remote:** GitHub and Vercel publication authorized on 2026-10-20; verify remote and deployment state before claiming success.
 - **Last verified milestone:** A distinct payer settled the 1 MUSD invoice on Mezo testnet. Contract state reads Paid, merchant balance rose by exactly 1 MUSD, and the `InvoicePaid` and MUSD `Transfer` logs share the payment transaction. See [testnet evidence](TESTNET_EVIDENCE.md).
-
-## Hackathon Context
-
-- **Event:** [Mezo Buildathon on AKINDO](https://app.akindo.io/wave-hacks/OVOO0gdrVU8379D10)
-- **Track:** Access and Distribution for MUSD/MEZO (Track 2)
-- **Waves:** October 16–26, 2026 ($2,000 MEZO); November 2–15, 2026 ($5,000 MEZO).
-- **Submission bar:** Real MUSD or MEZO integration, working deployment on supported chain (Mezo testnet accepted), public GitHub repo, project deck, two-minute pitch video.
-- **Organizer:** AKINDO; evaluated by the Mezo core team.
 
 ## Approved Scope and Decisions
 
@@ -35,13 +27,14 @@
 - User requested the frontend combine a pixel-art statue and Excel-like spreadsheet reference, with SettleTag copy, plus a test-token wallet and official faucet path.
 - User authorized creating a wallet, sharing its public address for faucet funding, and deploying the contract after confirming it was funded. Deployment completed.
 - User explicitly authorized using the funded test BTC to borrow MUSD for the payment test. A 0.04 test BTC collateral position was opened, 1800 test MUSD was minted, and a separate payer received 1 MUSD and 0.002 test BTC for gas. The 1 MUSD invoice was paid.
+- User authorized publishing the tested project to GitHub and Vercel. Public repository content should stay focused on the product, implementation, and technical evidence.
 
 ## Progress
 
 - **Verified locally:** 2 local EVM tests passed with mock MUSD, 2 encrypted-wallet tests passed, Vite production build passed. Dedicated deployment wallet's Windows user-encrypted key unlocks to `0x7FF7007f9330E140fC6d7A0c65d2b71d6ed8b24c`.
 - **Verified live:** 0.05 test BTC reached deployer by block 16263757. SettleTag deployed at `0x53eCBb8891Df17927d40E4FbF234a80cB82EC456` in block 16263763; 1964 bytes of code found and `musd()` equals official testnet MUSD. A 1 MUSD invoice was created in block 16263784. The deployer borrowed 1800 test MUSD against 0.04 test BTC collateral, then sent 1 MUSD and 0.002 test BTC to a distinct payer. The payer approved and paid the invoice in block 16266460. Invoice state is Paid; merchant balance increased by exactly 1 MUSD; `InvoicePaid` and MUSD `Transfer` logs match the transaction.
 - **Implemented, unverified live:** Browser wallet create/unlock/send flow and browser payment interaction have not been exercised in the UI.
-- **Pending:** Live browser visual check (computer-use URL policy blocked observation), user testing, and submission assets. The Mezo testnet borrow position remains open with 0.04 test BTC collateral locked and an initial 2001.8 test MUSD debt.
+- **Pending:** Public browser visual check and user testing. The Mezo testnet borrow position remains open with 0.04 test BTC collateral locked and an initial 2001.8 test MUSD debt.
 
 ## Verification Log
 
@@ -69,7 +62,7 @@
 | 2026-10-20 | Independent receipt log read | PASS; `InvoiceCreated` event in transaction `0xa10cf87356d8ff039a7604d63dc7da6ccdedb1b886fe298f301b27cabfa666e5` matches ID, merchant and 1 MUSD amount |
 | 2026-10-20 | `npm test` after live-app configuration | PASS; 4 tests |
 | 2026-10-20 | `npm run build` after live-app configuration | PASS; contract address included in Vite build |
-| 2026-10-20 | `npm run borrow:preview` | PASS; collateral and initial debt ratio checked before submission; `openTrove` static call and gas estimate succeeded |
+| 2026-10-20 | `npm run borrow:preview` | PASS; collateral and initial debt ratio checked before transaction submission; `openTrove` static call and gas estimate succeeded |
 | 2026-10-20 | `npm run borrow:testnet` | PASS; tx `0x350b8265c66775863dd6ee2b669fa3d4f833beb9145e5fc0154953fa3ab74e2b`, block 16263869; 1800 test MUSD minted against 0.04 test BTC collateral; initial debt 2001.8 MUSD |
 | 2026-10-20 | Separate payer creation and funding | PASS; payer `0x4aB359d5459E62D6a7912C5709c83d9E77255621`, local key encrypted and ignored; 0.002 test BTC and 1 MUSD confirmed; MUSD transfer tx `0x5ccaa6f6ec5aaaff74582194004a0945a4c6564dfa5d568d77c4b0c9428789e0` |
 | 2026-10-20 | Payer MUSD approval | PASS; tx `0xf9920fef601c08fe20a480214eacc52fe4bcde3c63f243433741693063225bae`; 1 MUSD allowance confirmed |
@@ -78,6 +71,9 @@
 | 2026-10-20 | Final `npm test` | PASS; 4 tests: 2 contract, 2 wallet |
 | 2026-10-20 | Final `npm run build` | PASS; Vite production bundle built |
 | 2026-10-20 | `git diff --check` | PASS; line-ending conversion warnings only |
+| 2026-10-20 | Release `npm test` | PASS; 4 tests: 2 contract, 2 wallet |
+| 2026-10-20 | Release `npm run build` | PASS; Vite production bundle built with the deployed contract as the default |
+| 2026-10-20 | Publication content check | PASS; no pitch or submission plan in README or technical evidence; `.secrets/`, `.env.local`, and `dist/` ignored by Git |
 
 ## Decision Log
 
@@ -101,8 +97,14 @@
 - **Reason:** This exercises a real MUSD approval and direct payer-to-merchant transfer, with distinct signer addresses and an independently readable receipt.
 - **Status:** Completed on Mezo testnet. The borrow position remains open; initial debt was 2001.8 test MUSD with 0.04 test BTC collateral.
 
+### 2026-10-20 — Retain the testnet borrow position
+
+- **Decision:** Keep the testnet position open for further product testing. Do not repay or withdraw collateral as part of the web release.
+- **Reason:** The deployment wallet holds the borrowed test MUSD, but the position's initial debt exceeds the 1800 MUSD principal by 201.8 MUSD. Closing it requires obtaining the difference and confirming the current repayment amount. The position uses testnet assets only.
+- **Status:** Open; 0.04 test BTC collateral remains locked.
+
 ## Next Action
 
 1. Review the live interface visually when browser access is available; address any issues.
-2. Prepare submission assets (public repo, deck, two-minute video) after user authorization to publish or submit.
-3. Decide how to handle the open testnet borrow position; do not claim it has been repaid or collateral withdrawn.
+2. Publish the tested source to GitHub and deploy the frontend to Vercel under the user's authorization; verify the public site.
+3. Keep the testnet borrow position open for further testing; verify its live state again before any future repayment or withdrawal.
