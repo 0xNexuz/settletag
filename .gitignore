@@ -5,3 +5,5 @@ src/artifacts/
 !.env.example
 .secrets/
 coverage/
+
+.vercel
