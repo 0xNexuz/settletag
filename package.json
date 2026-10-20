@@ -1,0 +1,21 @@
+{
+  "name": "settletag",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "compile": "node scripts/compile.js",
+    "test": "npm run compile && node --test test/*.test.js",
+    "dev": "npm run compile && vite --host 127.0.0.1",
+    "build": "npm run compile && vite build",
+    "deploy:testnet": "npm run compile && node scripts/deploy.js"
+  },
+  "dependencies": {
+    "ethers": "^6.15.0"
+  },
+  "devDependencies": {
+    "ganache": "^7.9.2",
+    "solc": "0.8.28",
+    "vite": "^7.1.0"
+  }
+}

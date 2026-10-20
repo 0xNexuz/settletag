@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0f172a" />
+    <title>SettleTag — MUSD invoices with proof</title>
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <a class="brand" href="/"><span class="brand-mark">S</span><span>SettleTag</span></a>
+        <div class="network"><span class="pulse"></span> Mezo testnet</div>
+        <button id="connect" class="button button-outline" type="button">Connect wallet</button>
+      </header>
+
+      <main>
+        <section class="hero">
+          <div class="eyebrow">MUSD PAYMENT INFRASTRUCTURE <span>·</span> TRACK 2</div>
+          <h1>Every payment<br /><em>has a purpose.</em></h1>
+          <p>Create a one-time MUSD invoice, pay it directly to the merchant, and verify the receipt onchain. No custody. No ambiguous transfer matching.</p>
+          <div class="hero-pills"><span>Exact amounts</span><span>One-time settlement</span><span>Onchain receipt</span></div>
+        </section>
+
+        <section class="workspace" aria-labelledby="workspace-title">
+          <div class="section-head">
+            <div><div class="eyebrow">WORKSPACE</div><h2 id="workspace-title">Invoice console</h2></div>
+            <span id="wallet-status" class="wallet-status">Wallet disconnected</span>
+          </div>
+          <div id="setup-note" class="notice" hidden></div>
+          <div id="message" class="notice" role="status" aria-live="polite" hidden></div>
+          <div class="panels">
+            <form id="create-form" class="panel">
+              <div class="panel-number">01 / MERCHANT</div>
+              <h3>Create invoice</h3>
+              <p>Publish a reference and amount on Mezo testnet. The payer sends MUSD straight to your wallet.</p>
+              <label for="amount">Amount in MUSD</label>
+              <div class="input-wrap"><input id="amount" name="amount" inputmode="decimal" placeholder="25.00" required /><span>MUSD</span></div>
+              <label for="expiry">Expires in</label>
+              <select id="expiry" name="expiry"><option value="1">1 day</option><option value="7" selected>7 days</option><option value="30">30 days</option></select>
+              <button class="button button-primary" type="submit">Create invoice <span aria-hidden="true">↗</span></button>
+              <div id="created" class="result" hidden><strong>Invoice created</strong><p>Share this link with your payer.</p><input id="share-link" aria-label="Invoice share link" readonly /><button id="copy-link" class="text-button" type="button">Copy link</button></div>
+            </form>
+            <div class="panel">
+              <div class="panel-number">02 / PAYER</div>
+              <h3>Pay or verify</h3>
+              <p>Enter an invoice reference to see the merchant, amount and settlement status before paying.</p>
+              <label for="invoice-id">Invoice reference</label>
+              <input id="invoice-id" spellcheck="false" placeholder="0x..." />
+              <button id="lookup" class="button button-secondary" type="button">Look up invoice <span aria-hidden="true">→</span></button>
+              <div id="invoice-details" class="result" hidden>
+                <div class="detail-row"><span>Status</span><strong id="detail-status"></strong></div>
+                <div class="detail-row"><span>Amount</span><strong id="detail-amount"></strong></div>
+                <div class="detail-row"><span>Merchant</span><code id="detail-merchant"></code></div>
+                <div class="detail-row"><span>Expires</span><strong id="detail-deadline"></strong></div>
+                <div class="detail-row"><span>Payer</span><code id="detail-payer"></code></div>
+                <button id="pay" class="button button-primary" type="button" hidden>Approve and pay MUSD <span aria-hidden="true">↗</span></button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="how"><div class="eyebrow">THE FLOW</div><div class="steps"><div><b>01</b><h3>Merchant sets terms</h3><p>A unique invoice reference binds the amount, merchant and deadline.</p></div><div><b>02</b><h3>Payer confirms</h3><p>The wallet approves the exact MUSD amount, then pays once.</p></div><div><b>03</b><h3>Anyone verifies</h3><p>The payment event and contract state provide a public receipt.</p></div></div></section>
+      </main>
+      <footer><span>SettleTag · Mezo testnet prototype</span><a href="https://explorer.test.mezo.org" target="_blank" rel="noreferrer">Mezo explorer ↗</a></footer>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
