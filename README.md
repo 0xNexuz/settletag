@@ -11,7 +11,7 @@ SettleTag is a Mezo testnet prototype. A merchant creates a one-time invoice onc
 - Contract: deployed on Mezo testnet. Web client: [publicly available](https://settletag.vercel.app/).
 - Contract behavior: covered by local EVM tests using mock MUSD.
 - Real testnet MUSD payment: **confirmed onchain**; see [testnet evidence](docs/TESTNET_EVIDENCE.md).
-- Public invoice view: loaded the paid invoice in the in-app browser and displayed the expected status, amount, merchant, and payer. Wallet and faucet sheets were also opened; a fresh merchant's signing flow has not been user tested.
+- Public invoice view: loaded the paid invoice in the in-app browser and displayed the expected status, amount, merchant, and payer. Wallet and faucet sheets opened; invoice and wallet layouts were checked at a 390 px mobile viewport. A fresh merchant's signing flow has not been user tested.
 - Third-party audit: **not performed**. Do not use with real funds.
 
 ## Why this product
