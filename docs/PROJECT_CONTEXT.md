@@ -6,7 +6,7 @@
 - **Location:** `outputs/settletag` in this task workspace
 - **Purpose:** One-time MUSD invoices with direct merchant settlement and onchain receipts.
 - **Current stage:** LIVE TESTNET VERIFICATION / PUBLIC WEB RELEASE
-- **Status:** Contract deployment, Mezo borrow, 1 MUSD direct settlement, and onchain receipt VERIFIED; browser UI visual check outstanding
+- **Status:** Contract settlement and public web release VERIFIED; browser UI visual check outstanding
 - **Last updated:** 2026-10-20
 
 ## Git State
@@ -14,8 +14,9 @@
 - **Branch:** `master` (local repository).
 - **HEAD:** Local live-testnet milestone committed; check `git log -1` for the current hash.
 - **Working tree:** Clean after the milestone commit; recheck on continuation. Local secrets and `.env.local` are ignored.
-- **Remote:** GitHub and Vercel publication authorized on 2026-10-20; verify remote and deployment state before claiming success.
-- **Last verified milestone:** A distinct payer settled the 1 MUSD invoice on Mezo testnet. Contract state reads Paid, merchant balance rose by exactly 1 MUSD, and the `InvoicePaid` and MUSD `Transfer` logs share the payment transaction. See [testnet evidence](TESTNET_EVIDENCE.md).
+- **Remote:** Public GitHub repository `https://github.com/0xNexuz/settletag`; `master` pushed and remote HEAD matched local at release check.
+- **Web:** Vercel project `xreyys-projects/settletag`; production alias `https://settletag.vercel.app`, deployment `dpl_GBQfBS4VCwS6T5mU3KoUx1RQ6KVg` Ready at release check.
+- **Last verified milestone:** Public Vercel build succeeded. The production alias returned HTTP 200 with the app HTML, JS, CSS, and pixel artwork; the bundle contains the deployed contract and MUSD addresses. The Mezo RPC returned chain ID 31611 and `Access-Control-Allow-Origin: *` for the production origin. Browser visual navigation timed out in the in-app browser, so visual and click-through sign-off remain unverified.
 
 ## Approved Scope and Decisions
 
@@ -34,7 +35,7 @@
 - **Verified locally:** 2 local EVM tests passed with mock MUSD, 2 encrypted-wallet tests passed, Vite production build passed. Dedicated deployment wallet's Windows user-encrypted key unlocks to `0x7FF7007f9330E140fC6d7A0c65d2b71d6ed8b24c`.
 - **Verified live:** 0.05 test BTC reached deployer by block 16263757. SettleTag deployed at `0x53eCBb8891Df17927d40E4FbF234a80cB82EC456` in block 16263763; 1964 bytes of code found and `musd()` equals official testnet MUSD. A 1 MUSD invoice was created in block 16263784. The deployer borrowed 1800 test MUSD against 0.04 test BTC collateral, then sent 1 MUSD and 0.002 test BTC to a distinct payer. The payer approved and paid the invoice in block 16266460. Invoice state is Paid; merchant balance increased by exactly 1 MUSD; `InvoicePaid` and MUSD `Transfer` logs match the transaction.
 - **Implemented, unverified live:** Browser wallet create/unlock/send flow and browser payment interaction have not been exercised in the UI.
-- **Pending:** Public browser visual check and user testing. The Mezo testnet borrow position remains open with 0.04 test BTC collateral locked and an initial 2001.8 test MUSD debt.
+- **Pending:** Browser visual and click-through check, plus user testing. The Mezo testnet borrow position remains open with 0.04 test BTC collateral locked and an initial 2001.8 test MUSD debt.
 
 ## Verification Log
 
@@ -74,6 +75,11 @@
 | 2026-10-20 | Release `npm test` | PASS; 4 tests: 2 contract, 2 wallet |
 | 2026-10-20 | Release `npm run build` | PASS; Vite production bundle built with the deployed contract as the default |
 | 2026-10-20 | Publication content check | PASS; no pitch or submission plan in README or technical evidence; `.secrets/`, `.env.local`, and `dist/` ignored by Git |
+| 2026-10-20 | GitHub repository and remote | PASS; public `0xNexuz/settletag` created, `master` pushed, `git ls-remote` matched local HEAD |
+| 2026-10-20 | Vercel build and deployment | PASS; project `xreyys-projects/settletag`, Vite build succeeded, production deployment `dpl_GBQfBS4VCwS6T5mU3KoUx1RQ6KVg` Ready and aliased to `settletag.vercel.app` |
+| 2026-10-20 | Production HTTP smoke | PASS; `/`, JS, CSS, and pixel artwork returned 200; built JS contains expected SettleTag and MUSD addresses |
+| 2026-10-20 | Production-origin Mezo RPC check | PASS; `eth_chainId` returned `0x7b7b` and CORS allowed `*` for `https://settletag.vercel.app` |
+| 2026-10-20 | In-app browser public URL check | UNVERIFIED; navigation timed out twice despite production HTTP and Vercel Ready checks |
 
 ## Decision Log
 
@@ -105,6 +111,6 @@
 
 ## Next Action
 
-1. Review the live interface visually when browser access is available; address any issues.
-2. Publish the tested source to GitHub and deploy the frontend to Vercel under the user's authorization; verify the public site.
+1. Review the public interface visually and click through the paid invoice when browser access is available; address any issues.
+2. Have a merchant test the public invoice flow with a separate testnet account.
 3. Keep the testnet borrow position open for further testing; verify its live state again before any future repayment or withdrawal.
