@@ -26,10 +26,26 @@ function notice(value, hash) {
 function err(e) { return e?.code === 4001 || e?.code === 'ACTION_REJECTED' ? 'Wallet request cancelled.' : e?.shortMessage || e?.reason || e?.message || 'Request failed.'; }
 function view(name) {
   document.querySelectorAll('[data-panel]').forEach(el => { el.hidden = el.dataset.panel !== name; });
-  document.querySelectorAll('.menu-tab,.sheet-tab').forEach(el => el.classList.toggle('active', el.dataset.view === name));
+  const currentMenu = { overview: 'Home', invoices: 'Invoices', wallet: 'Wallet', faucet: 'Faucet' }[name];
+  document.querySelectorAll('.menu-tab').forEach(el => el.classList.toggle('active', el.textContent.trim() === currentMenu));
+  document.querySelectorAll('.sheet-tab').forEach(el => el.classList.toggle('active', el.dataset.view === name));
+  const formulas = {
+    overview: '=SETTLEMENT_PROOF(invoice, payer, MUSD)',
+    invoices: '=INVOICE(reference, amount, deadline)',
+    wallet: '=TESTNET_BALANCE(address, BTC, MUSD)',
+    faucet: '=FUND_TEST_WALLET(address, faucet)'
+  };
+  document.querySelector('.formula-text').textContent = formulas[name];
+  document.querySelector('.name-box').firstChild.textContent = `ST · 0${{ overview: 1, invoices: 2, wallet: 3, faucet: 4 }[name]} `;
+  $('config-note').hidden = name !== 'invoices' || Boolean(CONTRACT);
   $('footer-status').textContent = `${name.toUpperCase()} · MEZO TESTNET`;
 }
 document.querySelectorAll('[data-view]').forEach(el => el.addEventListener('click', () => view(el.dataset.view)));
+const journey = document.createElement('div');
+journey.className = 'journey';
+journey.innerHTML = '<div class="journey-heading"><span>WORKBOOK FLOW</span><strong>From wallet to verifiable receipt</strong></div><div class="journey-steps"><button type="button" data-step="wallet"><b>01</b><span>Prepare wallet<small>Create or connect a testnet account</small></span><i>↗</i></button><button type="button" data-step="faucet"><b>02</b><span>Get test funds<small>Request BTC from Mezo’s faucet</small></span><i>↗</i></button><button type="button" data-step="invoices"><b>03</b><span>Settle an invoice<small>Pay MUSD, verify the receipt</small></span><i>↗</i></button></div>';
+document.querySelector('[data-panel="overview"] .build-note').before(journey);
+journey.querySelectorAll('[data-step]').forEach(el => el.addEventListener('click', () => view(el.dataset.step)));
 function setAddress(value) {
   address = value;
   $('wallet-address').textContent = value || 'No wallet selected';
@@ -184,7 +200,7 @@ $('pay').addEventListener('click', async () => {
 $('copy-link').addEventListener('click', () => navigator.clipboard.writeText($('share-link').value).then(() => notice('Invoice link copied.')).catch(() => notice('Copy the link from the field above.')));
 if (!CONTRACT) {
   $('config-note').textContent = 'Live invoices require a deployed SettleTag contract and VITE_CONTRACT_ADDRESS.';
-  $('config-note').hidden = false;
 }
 const shared = new URLSearchParams(location.search).get('invoice');
 if (shared) { view('invoices'); $('invoice-id').value = shared; if (CONTRACT) lookup().catch(e => notice(err(e))); }
+else view('overview');

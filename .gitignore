@@ -3,4 +3,5 @@ dist/
 src/artifacts/
 .env*
 !.env.example
+.secrets/
 coverage/

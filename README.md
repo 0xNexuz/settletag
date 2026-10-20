@@ -35,9 +35,13 @@ Copy the wallet's public address from the Wallet or Faucet sheet, then request t
 
 Do not send mainnet funds to a test wallet. Do not share the password or recovery phrase.
 
-## Testnet deployment (requires separate authorization and a testnet wallet)
+The project also has a separate deployment wallet. Its public Mezo testnet address is `0x7FF7007f9330E140fC6d7A0c65d2b71d6ed8b24c`. Its signing key is encrypted for this Windows user in ignored local `.secrets/` files. `npm run wallet:check` verifies that the encrypted key resolves to the public address without printing the key. Fund this address with test BTC for contract deployment. This deployment wallet is separate from any wallet created inside the web app. The local encrypted file is bound to this Windows account and is not a portable backup.
 
-`scripts/deploy.js` checks Mezo testnet chain ID `31611` and the official testnet MUSD token at `0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503`. It reads `DEPLOYER_PRIVATE_KEY` from the local shell and never writes it to a file. Do not run deployment until authorized.
+After the deployment wallet is funded and the authorized deployment is ready, `npm run deploy:saved:testnet` loads the local encrypted key in process and calls the existing deployment script. Do not run it before funding.
+
+## Testnet deployment (after faucet funding)
+
+`scripts/deploy.js` checks Mezo testnet chain ID `31611` and the official testnet MUSD token at `0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503`. It reads `DEPLOYER_PRIVATE_KEY` from the local shell. The saved-wallet wrapper uses the encrypted local key. Deployment will follow the user's confirmation that the address above is funded.
 
 ```sh
 npm run deploy:testnet
