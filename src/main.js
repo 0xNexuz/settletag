@@ -200,6 +200,15 @@ $('pay').addEventListener('click', async () => {
 $('copy-link').addEventListener('click', () => navigator.clipboard.writeText($('share-link').value).then(() => notice('Invoice link copied.')).catch(() => notice('Copy the link from the field above.')));
 if (!CONTRACT) {
   $('config-note').textContent = 'Live invoices require a deployed SettleTag contract and VITE_CONTRACT_ADDRESS.';
+} else {
+  document.querySelector('.build-note span').textContent = 'SettleTag is live on Mezo testnet. A 1 MUSD invoice settled directly from payer to merchant, with an onchain receipt.';
+  document.querySelector('.ribbon-note small').textContent = 'Live MUSD settlement verified';
+  const contractLink = document.createElement('a');
+  contractLink.href = `${EXPLORER}/address/${CONTRACT}`;
+  contractLink.target = '_blank';
+  contractLink.rel = 'noreferrer';
+  contractLink.textContent = 'View contract ↗';
+  document.querySelector('.build-note').append(contractLink);
 }
 const shared = new URLSearchParams(location.search).get('invoice');
 if (shared) { view('invoices'); $('invoice-id').value = shared; if (CONTRACT) lookup().catch(e => notice(err(e))); }

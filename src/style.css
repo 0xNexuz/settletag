@@ -13,6 +13,7 @@
 .journey-steps span{font-size:12px;font-weight:800;line-height:1.3}
 .journey-steps small{display:block;margin-top:5px;font-weight:400;font-size:11px;line-height:1.4;color:#61766b}
 .journey-steps i{font-style:normal;margin-left:auto;color:#bf7325}
+.build-note a{margin-left:auto;color:#85500d;text-decoration:underline;white-space:nowrap;font-weight:700}
 @media(max-width:1050px){.journey-steps{grid-template-columns:1fr}.journey-steps button{border-right:0;border-bottom:1px solid #c7d7ca}.journey-steps button:last-child{border-bottom:0}}
 @media(max-width:450px){.journey-heading{display:block}.journey-heading strong{display:block;text-align:left;margin-top:6px}}
 

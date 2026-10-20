@@ -3,10 +3,11 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ethers } from 'ethers';
 
-export function loadLocalTestWallet() {
+export function loadLocalTestWallet(label = 'mezo-test-wallet') {
+  if (!['mezo-test-wallet', 'mezo-test-payer'].includes(label)) throw new Error('Unknown local wallet label.');
   const dir = join(process.cwd(), '.secrets');
-  const encrypted = readFileSync(join(dir, 'mezo-test-wallet.dpapi'), 'utf8').trim();
-  const expected = readFileSync(join(dir, 'mezo-test-wallet.address'), 'utf8').trim();
+  const encrypted = readFileSync(join(dir, `${label}.dpapi`), 'utf8').trim();
+  const expected = readFileSync(join(dir, `${label}.address`), 'utf8').trim();
   const decrypted = spawnSync('C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.exe', [
     '-NoProfile', '-NonInteractive', '-Command',
     '$secure=ConvertTo-SecureString ([Console]::In.ReadToEnd().Trim()); $ptr=[Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure); try { [Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr) } finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ptr) }'

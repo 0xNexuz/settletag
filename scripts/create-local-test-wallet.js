@@ -3,9 +3,10 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { ethers } from 'ethers';
 
+const label = process.argv[2] === 'payer' ? 'mezo-test-payer' : 'mezo-test-wallet';
 const dir = join(process.cwd(), '.secrets');
-const keyFile = join(dir, 'mezo-test-wallet.dpapi');
-const addressFile = join(dir, 'mezo-test-wallet.address');
+const keyFile = join(dir, `${label}.dpapi`);
+const addressFile = join(dir, `${label}.address`);
 if (existsSync(keyFile) || existsSync(addressFile)) {
   throw new Error('A local test wallet already exists. Refusing to overwrite it.');
 }

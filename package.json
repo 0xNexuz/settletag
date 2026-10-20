@@ -10,8 +10,15 @@
     "build": "npm run compile && vite build",
     "wallet:create": "node scripts/create-local-test-wallet.js",
     "wallet:check": "node scripts/verify-local-test-wallet.js",
+    "wallet:payer:create": "node scripts/create-local-test-wallet.js payer",
+    "wallet:payer:check": "node scripts/verify-local-test-wallet.js payer",
     "deploy:testnet": "npm run compile && node scripts/deploy.js",
-    "deploy:saved:testnet": "npm run compile && node --use-system-ca scripts/deploy-saved-test-wallet.js"
+    "deploy:saved:testnet": "npm run compile && node --use-system-ca scripts/deploy-saved-test-wallet.js",
+    "smoke:testnet": "npm run compile && node --use-system-ca scripts/smoke-testnet.js",
+    "borrow:preview": "node --use-system-ca scripts/borrow-test-musd.js",
+    "borrow:testnet": "node --use-system-ca scripts/borrow-test-musd.js --execute",
+    "payer:fund": "node --use-system-ca scripts/fund-test-payer.js",
+    "payer:pay": "npm run compile && node --use-system-ca scripts/pay-test-invoice.js"
   },
   "dependencies": {
     "ethers": "^6.15.0"

@@ -5,17 +5,17 @@
 - **Name:** SettleTag
 - **Location:** `outputs/settletag` in this task workspace
 - **Purpose:** One-time MUSD invoices with direct merchant settlement and onchain receipts.
-- **Current stage:** DEVELOPMENT / VERIFICATION
-- **Status:** Local contract and web build VERIFIED; real Mezo integration UNVERIFIED
+- **Current stage:** LIVE TESTNET VERIFICATION / SUBMISSION PREPARATION
+- **Status:** Contract deployment, Mezo borrow, 1 MUSD direct settlement, and onchain receipt VERIFIED; browser UI visual check outstanding
 - **Last updated:** 2026-10-20
 
 ## Git State
 
 - **Branch:** `master` (local repository).
-- **HEAD:** Local prototype commit `ddc2d6a`; check `git log -1` after later context updates.
-- **Working tree:** Clean immediately after the prototype commit; recheck on continuation.
+- **HEAD:** Local live-testnet milestone committed; check `git log -1` for the current hash.
+- **Working tree:** Clean after the milestone commit; recheck on continuation. Local secrets and `.env.local` are ignored.
 - **Remote:** None. No push has been authorized.
-- **Last verified milestone:** Contract and encrypted-wallet tests (4 total) and production web build passed locally on 2026-10-20.
+- **Last verified milestone:** A distinct payer settled the 1 MUSD invoice on Mezo testnet. Contract state reads Paid, merchant balance rose by exactly 1 MUSD, and the `InvoicePaid` and MUSD `Transfer` logs share the payment transaction. See [testnet evidence](TESTNET_EVIDENCE.md).
 
 ## Hackathon Context
 
@@ -31,16 +31,17 @@
 - Selected a narrow invoice reference and settlement product after comparing the event requirements and prior Mezo winners.
 - Use Mezo testnet chain ID 31611 and official testnet MUSD address `0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503`, from [Mezo documentation](https://mezo.org/docs/users/resources/contracts-reference).
 - No custody: the contract uses `transferFrom(payer, merchant, amount)` and records a one-time receipt.
-- Local mock-token testing comes before any external deployment. Testnet deployment needs separate approval.
+- Local mock-token testing preceded external deployment.
 - User requested the frontend combine a pixel-art statue and Excel-like spreadsheet reference, with SettleTag copy, plus a test-token wallet and official faucet path.
-- User authorized creating a wallet, sharing its public address in chat for faucet funding, and deploying the contract after they confirm it is funded. This is conditional deployment authorization; no deployment has run yet.
+- User authorized creating a wallet, sharing its public address for faucet funding, and deploying the contract after confirming it was funded. Deployment completed.
+- User explicitly authorized using the funded test BTC to borrow MUSD for the payment test. A 0.04 test BTC collateral position was opened, 1800 test MUSD was minted, and a separate payer received 1 MUSD and 0.002 test BTC for gas. The 1 MUSD invoice was paid.
 
 ## Progress
 
-- **Verified locally:** Solidity invoice contract compiled, 2 local EVM tests passed with mock MUSD, 2 encrypted-wallet tests passed, Vite production build passed. Dedicated deployment wallet created; its Windows user-encrypted key was unlocked and confirmed to match public address `0x7FF7007f9330E140fC6d7A0c65d2b71d6ed8b24c`.
-- **Implemented, unverified live:** Spreadsheet frontend using the supplied pixel art, local encrypted browser wallet with recovery phrase and backup, test BTC/MUSD balance reads and send flow, browser wallet option, official faucet and MUSD borrow links, invoice interface, deployment script.
-- **Pending:** Live browser visual check (computer-use URL policy blocked observation), faucet CAPTCHA and actual token receipt, deployment after user confirms funding, real MUSD settlement, final submission assets.
-- **Blocker:** User reports funding, but Mezo testnet RPC shows 0 BTC and 0 MUSD for the dedicated deployment address at block 16263615. Awaiting faucet transaction evidence or a new BTC transfer before deployment. No live-chain receipt exists yet.
+- **Verified locally:** 2 local EVM tests passed with mock MUSD, 2 encrypted-wallet tests passed, Vite production build passed. Dedicated deployment wallet's Windows user-encrypted key unlocks to `0x7FF7007f9330E140fC6d7A0c65d2b71d6ed8b24c`.
+- **Verified live:** 0.05 test BTC reached deployer by block 16263757. SettleTag deployed at `0x53eCBb8891Df17927d40E4FbF234a80cB82EC456` in block 16263763; 1964 bytes of code found and `musd()` equals official testnet MUSD. A 1 MUSD invoice was created in block 16263784. The deployer borrowed 1800 test MUSD against 0.04 test BTC collateral, then sent 1 MUSD and 0.002 test BTC to a distinct payer. The payer approved and paid the invoice in block 16266460. Invoice state is Paid; merchant balance increased by exactly 1 MUSD; `InvoicePaid` and MUSD `Transfer` logs match the transaction.
+- **Implemented, unverified live:** Browser wallet create/unlock/send flow and browser payment interaction have not been exercised in the UI.
+- **Pending:** Live browser visual check (computer-use URL policy blocked observation), user testing, and submission assets. The Mezo testnet borrow position remains open with 0.04 test BTC collateral locked and an initial 2001.8 test MUSD debt.
 
 ## Verification Log
 
@@ -60,6 +61,23 @@
 | 2026-10-20 | Mezo RPC `eth_getBalance` for deployer | 0 BTC at block 16263615, including pending state; chain ID 31611 |
 | 2026-10-20 | Mezo testnet MUSD `balanceOf` for deployer | 0 MUSD; testnet token contract code present |
 | 2026-10-20 | Node RPC TLS verification | PASS with `--use-system-ca` and certificate verification enabled; the saved-wallet deploy command now requires this path |
+| 2026-10-20 | Deployer balance check | 0.05 test BTC at block 16263757 |
+| 2026-10-20 | `npm run deploy:saved:testnet` | PASS; contract `0x53eCBb8891Df17927d40E4FbF234a80cB82EC456`; tx `0x04eceb20eac2bb22cb0503f217172bf762c9cc6c184e4e2dcaeab53b5926584c`; block 16263763 |
+| 2026-10-20 | Onchain contract read | PASS; 1964 bytes of code, expected MUSD token address, chain ID 31611 |
+| 2026-10-20 | `npm run smoke:testnet` | PASS; 1 MUSD invoice `0x7d8aec69ac6d214cde80139bffe33989e6dd58006e561c6942964059e190516f` created; tx `0xa10cf87356d8ff039a7604d63dc7da6ccdedb1b886fe298f301b27cabfa666e5`; block 16263784; state and event verified |
+| 2026-10-20 | `npm run build` with deployed contract configured | PASS; Vite production bundle built |
+| 2026-10-20 | Independent receipt log read | PASS; `InvoiceCreated` event in transaction `0xa10cf87356d8ff039a7604d63dc7da6ccdedb1b886fe298f301b27cabfa666e5` matches ID, merchant and 1 MUSD amount |
+| 2026-10-20 | `npm test` after live-app configuration | PASS; 4 tests |
+| 2026-10-20 | `npm run build` after live-app configuration | PASS; contract address included in Vite build |
+| 2026-10-20 | `npm run borrow:preview` | PASS; collateral and initial debt ratio checked before submission; `openTrove` static call and gas estimate succeeded |
+| 2026-10-20 | `npm run borrow:testnet` | PASS; tx `0x350b8265c66775863dd6ee2b669fa3d4f833beb9145e5fc0154953fa3ab74e2b`, block 16263869; 1800 test MUSD minted against 0.04 test BTC collateral; initial debt 2001.8 MUSD |
+| 2026-10-20 | Separate payer creation and funding | PASS; payer `0x4aB359d5459E62D6a7912C5709c83d9E77255621`, local key encrypted and ignored; 0.002 test BTC and 1 MUSD confirmed; MUSD transfer tx `0x5ccaa6f6ec5aaaff74582194004a0945a4c6564dfa5d568d77c4b0c9428789e0` |
+| 2026-10-20 | Payer MUSD approval | PASS; tx `0xf9920fef601c08fe20a480214eacc52fe4bcde3c63f243433741693063225bae`; 1 MUSD allowance confirmed |
+| 2026-10-20 | `npm run payer:pay` | PASS; tx `0xf2a79f2a848b643889db43321ca36f268233898de5a4f4c6fc26af814ef162e4`, block 16266460; exact 1 MUSD merchant balance gain and `InvoicePaid` receipt verified |
+| 2026-10-20 | Independent onchain state and log read | PASS; invoice status Paid (`2`), expected merchant/payer/amount, and matching `InvoicePaid` and MUSD `Transfer` logs in payment tx |
+| 2026-10-20 | Final `npm test` | PASS; 4 tests: 2 contract, 2 wallet |
+| 2026-10-20 | Final `npm run build` | PASS; Vite production bundle built |
+| 2026-10-20 | `git diff --check` | PASS; line-ending conversion warnings only |
 
 ## Decision Log
 
@@ -75,10 +93,16 @@
 
 - **Decision:** Use a separate locally generated testnet wallet for deployment, with the private key encrypted to the current Windows user and excluded from Git. Share only the public address for faucet funding.
 - **Reason:** The browser-created payer wallet is separate from the deployment signer. This lets the user fund one stable deployer address while keeping signing material out of chat and the repository.
-- **Status:** Wallet generated and locally verified. Faucet funding and deployment remain pending.
+- **Status:** Wallet funded; deployment and live MUSD payment verified.
+
+### 2026-10-20 — Testnet borrow and distinct payer
+
+- **Decision:** Use the user-authorized test BTC to mint test MUSD, then settle through a separate payer wallet.
+- **Reason:** This exercises a real MUSD approval and direct payer-to-merchant transfer, with distinct signer addresses and an independently readable receipt.
+- **Status:** Completed on Mezo testnet. The borrow position remains open; initial debt was 2001.8 test MUSD with 0.04 test BTC collateral.
 
 ## Next Action
 
-1. Resolve the mismatch between the reported faucet funding and the onchain 0 BTC balance for `0x7FF7007f9330E140fC6d7A0c65d2b71d6ed8b24c`; obtain the faucet transaction hash or retry the BTC request. Verify the balance on Mezo testnet.
-2. Deploy SettleTag with `npm run deploy:saved:testnet` under the user's conditional authorization, capture explorer evidence, then configure and test the app.
-3. Review the live interface visually when browser access is available; address any issues.
+1. Review the live interface visually when browser access is available; address any issues.
+2. Prepare submission assets (public repo, deck, two-minute video) after user authorization to publish or submit.
+3. Decide how to handle the open testnet borrow position; do not claim it has been repaid or collateral withdrawn.

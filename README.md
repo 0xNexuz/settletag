@@ -6,9 +6,9 @@ SettleTag is a Track 2 (access and distribution) prototype for the October–Nov
 
 ## Status
 
-- Contract and web client: implemented locally.
+- Contract and web client: implemented locally; the contract is deployed on Mezo testnet.
 - Contract behavior: covered by local EVM tests using mock MUSD.
-- Mezo testnet deployment and real MUSD payment: **not yet performed**.
+- Real testnet MUSD payment: **confirmed onchain**; see [testnet evidence](docs/TESTNET_EVIDENCE.md).
 - Third-party audit: **not performed**. Do not use with real funds.
 
 ## Why this product
@@ -25,7 +25,7 @@ npm test
 npm run dev
 ```
 
-The interface opens locally, but live invoice actions need a deployed contract. Set `VITE_CONTRACT_ADDRESS` in `.env` to an authorized Mezo testnet deployment address, then restart Vite. Do not paste a private key into `.env` because Vite exposes variables prefixed with `VITE_` to the browser.
+The deployed contract address is in `.env.example`. Copy it into a local `.env` as `VITE_CONTRACT_ADDRESS`, then restart Vite for live invoice actions. Do not paste a private key into `.env` because Vite exposes variables prefixed with `VITE_` to the browser.
 
 ## Test wallet and faucet
 
@@ -35,19 +35,23 @@ Copy the wallet's public address from the Wallet or Faucet sheet, then request t
 
 Do not send mainnet funds to a test wallet. Do not share the password or recovery phrase.
 
-The project also has a separate deployment wallet. Its public Mezo testnet address is `0x7FF7007f9330E140fC6d7A0c65d2b71d6ed8b24c`. Its signing key is encrypted for this Windows user in ignored local `.secrets/` files. `npm run wallet:check` verifies that the encrypted key resolves to the public address without printing the key. Fund this address with test BTC for contract deployment. This deployment wallet is separate from any wallet created inside the web app. The local encrypted file is bound to this Windows account and is not a portable backup.
+The project also has a separate deployment wallet. Its public Mezo testnet address is `0x7FF7007f9330E140fC6d7A0c65d2b71d6ed8b24c`. Its signing key is encrypted for this Windows user in ignored local `.secrets/` files. `npm run wallet:check` verifies that the encrypted key resolves to the public address without printing the key. This deployment wallet is separate from any wallet created inside the web app. The local encrypted file is bound to this Windows account and is not a portable backup.
 
-After the deployment wallet is funded and the authorized deployment is ready, `npm run deploy:saved:testnet` loads the local encrypted key in process and calls the existing deployment script. Do not run it before funding.
+`npm run deploy:saved:testnet` loads the local encrypted key in process and calls the deployment script. The current contract has already been deployed; running the command again creates a new contract.
 
-## Testnet deployment (after faucet funding)
+## Testnet deployment
 
-`scripts/deploy.js` checks Mezo testnet chain ID `31611` and the official testnet MUSD token at `0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503`. It reads `DEPLOYER_PRIVATE_KEY` from the local shell. The saved-wallet wrapper uses the encrypted local key. Deployment will follow the user's confirmation that the address above is funded.
+`scripts/deploy.js` checks Mezo testnet chain ID `31611` and the official testnet MUSD token at `0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503`. It reads `DEPLOYER_PRIVATE_KEY` from the local shell. The saved-wallet wrapper uses the encrypted local key.
 
 ```sh
 npm run deploy:testnet
 ```
 
-After deployment, copy the printed contract address into `VITE_CONTRACT_ADDRESS` in a local `.env`, run `npm run dev`, and fund a payer wallet with testnet MUSD. Mezo's [testnet guide](https://mezo.org/docs/developers/getting-started/) explains network setup and MUSD minting.
+For a fresh deployment, copy the printed contract address into `VITE_CONTRACT_ADDRESS` in a local `.env` and restart Vite. Mezo's [testnet guide](https://mezo.org/docs/developers/getting-started/) explains network setup and MUSD minting.
+
+**Current Mezo testnet deployment:** [SettleTag contract](https://explorer.test.mezo.org/address/0x53eCBb8891Df17927d40E4FbF234a80cB82EC456). The [deployment](https://explorer.test.mezo.org/tx/0x04eceb20eac2bb22cb0503f217172bf762c9cc6c184e4e2dcaeab53b5926584c) and [1 MUSD invoice creation](https://explorer.test.mezo.org/tx/0xa10cf87356d8ff039a7604d63dc7da6ccdedb1b886fe298f301b27cabfa666e5) are confirmed. Invoice ID: `0x7d8aec69ac6d214cde80139bffe33989e6dd58006e561c6942964059e190516f`. The [payment transaction](https://explorer.test.mezo.org/tx/0xf2a79f2a848b643889db43321ca36f268233898de5a4f4c6fc26af814ef162e4) settled exactly 1 MUSD directly to the merchant; invoice state reads Paid. The full proof is in [testnet evidence](docs/TESTNET_EVIDENCE.md).
+
+To obtain the test MUSD, the deployer opened a Mezo testnet borrow position using 0.04 test BTC collateral. Its initial debt was 2001.8 test MUSD (1800 borrowed MUSD, 1.8 borrowing fee, 200 gas compensation). That testnet position remains open and the collateral remains locked.
 
 ## Architecture and flow
 
@@ -61,11 +65,11 @@ The merchant can cancel an open invoice. An expired invoice cannot be paid. Dupl
 
 ## Limits and next milestones
 
-- **Current milestone:** local contract, tests, spreadsheet-inspired interface, encrypted browser test wallet, and faucet handoff.
-- **Next:** authorized testnet deployment, real MUSD funding and payment, explorer receipt, and end-to-end browser verification.
-- **Then:** user testing with a merchant, clearer invoice descriptions stored offchain with their content hash, and submission materials (deck, two-minute video, public repo).
+- **Current milestone:** deployed contract, real 1 MUSD payment, onchain receipt, local tests, spreadsheet-inspired interface, encrypted browser test wallet, and faucet handoff.
+- **Next:** end-to-end browser verification when the local browser URL is accessible, then user testing with a merchant.
+- **Then:** clearer invoice descriptions stored offchain with their content hash, and submission materials (deck, two-minute video, public repo).
 - This prototype is unaudited and not ready for mainnet. It does not calculate tax, fiat value, refunds, or disputes.
 
 ## Buildathon evidence
 
-The [AKINDO Mezo Buildathon](https://app.akindo.io/wave-hacks/OVOO0gdrVU8379D10) requires MUSD or MEZO integration, a working supported-chain deployment, public GitHub repository, deck and two-minute pitch video. The current local milestone does **not** meet all submission requirements yet.
+The [AKINDO Mezo Buildathon](https://app.akindo.io/wave-hacks/OVOO0gdrVU8379D10) requires MUSD or MEZO integration, a working supported-chain deployment, public GitHub repository, deck and two-minute pitch video. The live integration and deployment are verified. The public repo, deck, video, and submission remain to be prepared.
