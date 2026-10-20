@@ -6,7 +6,7 @@
 - **Location:** `outputs/settletag` in this task workspace
 - **Purpose:** One-time MUSD invoices with direct merchant settlement and onchain receipts.
 - **Current stage:** LIVE TESTNET VERIFICATION / PUBLIC WEB RELEASE
-- **Status:** Contract settlement and public web release VERIFIED; browser UI visual check outstanding
+- **Status:** Contract settlement, public web release, paid-invoice display, and Wallet/Faucet navigation VERIFIED; mobile layout and new merchant signing flow unverified
 - **Last updated:** 2026-10-20
 
 ## Git State
@@ -16,7 +16,7 @@
 - **Working tree:** Clean after the milestone commit; recheck on continuation. Local secrets and `.env.local` are ignored.
 - **Remote:** Public GitHub repository `https://github.com/0xNexuz/settletag`; `master` pushed and remote HEAD matched local at release check.
 - **Web:** Vercel project `xreyys-projects/settletag`; production alias `https://settletag.vercel.app`, deployment `dpl_GBQfBS4VCwS6T5mU3KoUx1RQ6KVg` Ready at release check.
-- **Last verified milestone:** Public Vercel build succeeded. The production alias returned HTTP 200 with the app HTML, JS, CSS, and pixel artwork; the bundle contains the deployed contract and MUSD addresses. The Mezo RPC returned chain ID 31611 and `Access-Control-Allow-Origin: *` for the production origin. Browser visual navigation timed out in the in-app browser, so visual and click-through sign-off remain unverified.
+- **Last verified milestone:** Public Vercel build succeeded. The production alias returned HTTP 200 with the app HTML, JS, CSS, and pixel artwork; the bundle contains the deployed contract and MUSD addresses. The Mezo RPC returned chain ID 31611 and `Access-Control-Allow-Origin: *` for the production origin. The public paid-invoice URL subsequently loaded in the in-app browser and showed Paid, 1.0 MUSD, and the expected merchant and payer. Wallet and Faucet navigation also worked. Mobile layout and new merchant signing flow remain unverified.
 
 ## Approved Scope and Decisions
 
@@ -35,7 +35,7 @@
 - **Verified locally:** 2 local EVM tests passed with mock MUSD, 2 encrypted-wallet tests passed, Vite production build passed. Dedicated deployment wallet's Windows user-encrypted key unlocks to `0x7FF7007f9330E140fC6d7A0c65d2b71d6ed8b24c`.
 - **Verified live:** 0.05 test BTC reached deployer by block 16263757. SettleTag deployed at `0x53eCBb8891Df17927d40E4FbF234a80cB82EC456` in block 16263763; 1964 bytes of code found and `musd()` equals official testnet MUSD. A 1 MUSD invoice was created in block 16263784. The deployer borrowed 1800 test MUSD against 0.04 test BTC collateral, then sent 1 MUSD and 0.002 test BTC to a distinct payer. The payer approved and paid the invoice in block 16266460. Invoice state is Paid; merchant balance increased by exactly 1 MUSD; `InvoicePaid` and MUSD `Transfer` logs match the transaction.
 - **Implemented, unverified live:** Browser wallet create/unlock/send flow and browser payment interaction have not been exercised in the UI.
-- **Pending:** Browser visual and click-through check, plus user testing. The Mezo testnet borrow position remains open with 0.04 test BTC collateral locked and an initial 2001.8 test MUSD debt.
+- **Pending:** Mobile layout check and merchant user testing. The Mezo testnet borrow position remains open with 0.04 test BTC collateral locked and an initial 2001.8 test MUSD debt.
 
 ## Verification Log
 
@@ -80,6 +80,9 @@
 | 2026-10-20 | Production HTTP smoke | PASS; `/`, JS, CSS, and pixel artwork returned 200; built JS contains expected SettleTag and MUSD addresses |
 | 2026-10-20 | Production-origin Mezo RPC check | PASS; `eth_chainId` returned `0x7b7b` and CORS allowed `*` for `https://settletag.vercel.app` |
 | 2026-10-20 | In-app browser public URL check | UNVERIFIED; navigation timed out twice despite production HTTP and Vercel Ready checks |
+| 2026-10-20 | Public paid-invoice browser check | PASS; production invoice URL loaded, displayed Paid, 1.0 MUSD, expected merchant and payer. Manual Look up invoice returned “Invoice loaded from Mezo testnet.” Wallet and Faucet sheets opened. No fresh wallet creation, signing, or mobile viewport test performed. |
+| 2026-10-20 | Documentation refresh `npm test` | PASS; 4 tests: 2 contract, 2 wallet. Ganache used its Node.js fallback because a native uWS binary was unavailable. |
+| 2026-10-20 | Documentation refresh `npm run build` | PASS; Vite production bundle built. |
 
 ## Decision Log
 
@@ -106,11 +109,11 @@
 ### 2026-10-20 — Retain the testnet borrow position
 
 - **Decision:** Keep the testnet position open for further product testing. Do not repay or withdraw collateral as part of the web release.
-- **Reason:** The deployment wallet holds the borrowed test MUSD, but the position's initial debt exceeds the 1800 MUSD principal by 201.8 MUSD. Closing it requires obtaining the difference and confirming the current repayment amount. The position uses testnet assets only.
+- **Reason:** Initial total debt was 2001.8 MUSD, including 200 MUSD gas compensation. Under the [Mezo MUSD protocol documentation](https://github.com/mezo-org/musd/blob/main/docs/README.md), the GasPool supplies that compensation when a trove closes; the borrower must repay the debt excluding gas compensation, initially 1801.8 MUSD, plus accrued interest. The merchant held 1800 MUSD after the test payment, so the opening shortfall was 1.8 MUSD plus any accrued interest. Verify the live repayment quote before attempting closure. The position uses testnet assets only.
 - **Status:** Open; 0.04 test BTC collateral remains locked.
 
 ## Next Action
 
-1. Review the public interface visually and click through the paid invoice when browser access is available; address any issues.
-2. Have a merchant test the public invoice flow with a separate testnet account.
+1. Check the narrow mobile layout when a controllable viewport is available.
+2. Have a merchant test invoice creation, link sharing, and reconciliation with a separate testnet account; collect feedback before claiming demand.
 3. Keep the testnet borrow position open for further testing; verify its live state again before any future repayment or withdrawal.

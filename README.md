@@ -4,16 +4,28 @@
 
 SettleTag is a Mezo testnet prototype. A merchant creates a one-time invoice onchain. A payer approves the exact MUSD amount and pays; MUSD goes directly from payer to merchant while the contract records the payer and emits an `InvoicePaid` event. The contract never holds funds.
 
+**Try it:** [Open SettleTag](https://settletag.vercel.app/) · [Inspect a paid 1 MUSD invoice](https://settletag.vercel.app/?invoice=0x7d8aec69ac6d214cde80139bffe33989e6dd58006e561c6942964059e190516f) · [See the payment on Mezo testnet](https://explorer.test.mezo.org/tx/0xf2a79f2a848b643889db43321ca36f268233898de5a4f4c6fc26af814ef162e4)
+
 ## Status
 
-- Contract and web client: implemented locally; the contract is deployed on Mezo testnet.
+- Contract: deployed on Mezo testnet. Web client: [publicly available](https://settletag.vercel.app/).
 - Contract behavior: covered by local EVM tests using mock MUSD.
 - Real testnet MUSD payment: **confirmed onchain**; see [testnet evidence](docs/TESTNET_EVIDENCE.md).
+- Public invoice view: loaded the paid invoice in the in-app browser and displayed the expected status, amount, merchant, and payer. Wallet and faucet sheets were also opened; a fresh merchant's signing flow has not been user tested.
 - Third-party audit: **not performed**. Do not use with real funds.
 
 ## Why this product
 
-Simple transfers do not carry a stable invoice reference. Amount matching is ambiguous when multiple customers send the same amount. SettleTag binds an invoice ID to a merchant, exact amount, deadline and one-time settlement state, giving both parties the same onchain receipt. This is intended as a reusable payment reference layer for merchants and integrators, rather than a consumer wallet.
+Simple transfers do not carry a stable invoice reference. Amount matching is ambiguous when multiple customers send the same amount. SettleTag binds an invoice ID to a merchant, exact amount, deadline and one-time settlement state, giving both parties the same onchain receipt.
+
+The first intended user is a small merchant or freelancer already accepting MUSD on Mezo. They can issue a payment link for a specific bill, share it with a customer, and later reconcile the bill against the `InvoicePaid` event. A checkout or accounting integrator could use the same invoice ID and event instead of matching transfers only by amount and address. This is a prototype use case, not validated merchant demand.
+
+## Verify the live payment
+
+1. Open the [paid invoice](https://settletag.vercel.app/?invoice=0x7d8aec69ac6d214cde80139bffe33989e6dd58006e561c6942964059e190516f). The Invoices sheet should show **Paid**, **1.0 MUSD**, merchant `0x7FF7007f9330E140fC6d7A0c65d2b71d6ed8b24c`, and payer `0x4aB359d5459E62D6a7912C5709c83d9E77255621`.
+2. Compare the [payment transaction](https://explorer.test.mezo.org/tx/0xf2a79f2a848b643889db43321ca36f268233898de5a4f4c6fc26af814ef162e4) with the invoice state and [testnet evidence](docs/TESTNET_EVIDENCE.md). The transaction contains the SettleTag `InvoicePaid` event and a 1 MUSD transfer to the merchant.
+
+The paid example is read-only. To make a new invoice or payment, connect a funded Mezo testnet wallet and sign the transactions yourself.
 
 ## Run locally
 
@@ -66,6 +78,6 @@ The merchant can cancel an open invoice. An expired invoice cannot be paid. Dupl
 ## Limits and next milestones
 
 - **Current milestone:** deployed contract, real 1 MUSD payment, onchain receipt, local tests, spreadsheet-inspired interface, encrypted browser test wallet, and faucet handoff.
-- **Next:** browser verification and user testing with a merchant.
+- **Next:** a merchant trial of invoice creation, sharing, and reconciliation, followed by feedback on whether the reference solves their workflow.
 - **Later:** clearer invoice descriptions stored offchain with their content hash.
 - This prototype is unaudited and not ready for mainnet. It does not calculate tax, fiat value, refunds, or disputes.
