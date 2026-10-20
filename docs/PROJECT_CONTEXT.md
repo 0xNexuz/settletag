@@ -11,7 +11,10 @@
 
 ## Git State
 
-- **Branch / HEAD / remote:** Check with Git before each continuation; no remote or push has been authorized.
+- **Branch:** `master` (local repository).
+- **HEAD:** Local prototype commit `ddc2d6a`; check `git log -1` after later context updates.
+- **Working tree:** Clean immediately after the prototype commit; recheck on continuation.
+- **Remote:** None. No push has been authorized.
 - **Last verified milestone:** Contract tests and production web build passed locally on 2026-10-20.
 
 ## Hackathon Context
