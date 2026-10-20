@@ -11,7 +11,7 @@
     "wallet:create": "node scripts/create-local-test-wallet.js",
     "wallet:check": "node scripts/verify-local-test-wallet.js",
     "deploy:testnet": "npm run compile && node scripts/deploy.js",
-    "deploy:saved:testnet": "npm run compile && node scripts/deploy-saved-test-wallet.js"
+    "deploy:saved:testnet": "npm run compile && node --use-system-ca scripts/deploy-saved-test-wallet.js"
   },
   "dependencies": {
     "ethers": "^6.15.0"

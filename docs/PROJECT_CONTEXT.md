@@ -40,7 +40,7 @@
 - **Verified locally:** Solidity invoice contract compiled, 2 local EVM tests passed with mock MUSD, 2 encrypted-wallet tests passed, Vite production build passed. Dedicated deployment wallet created; its Windows user-encrypted key was unlocked and confirmed to match public address `0x7FF7007f9330E140fC6d7A0c65d2b71d6ed8b24c`.
 - **Implemented, unverified live:** Spreadsheet frontend using the supplied pixel art, local encrypted browser wallet with recovery phrase and backup, test BTC/MUSD balance reads and send flow, browser wallet option, official faucet and MUSD borrow links, invoice interface, deployment script.
 - **Pending:** Live browser visual check (computer-use URL policy blocked observation), faucet CAPTCHA and actual token receipt, deployment after user confirms funding, real MUSD settlement, final submission assets.
-- **Blocker:** Waiting for user to fund the dedicated deployment address and confirm. No live-chain receipt exists yet.
+- **Blocker:** User reports funding, but Mezo testnet RPC shows 0 BTC and 0 MUSD for the dedicated deployment address at block 16263615. Awaiting faucet transaction evidence or a new BTC transfer before deployment. No live-chain receipt exists yet.
 
 ## Verification Log
 
@@ -57,6 +57,9 @@
 | 2026-10-20 | `npm run wallet:check` | PASS; decrypted key resolves to `0x7FF7007f9330E140fC6d7A0c65d2b71d6ed8b24c`; secret was not printed |
 | 2026-10-20 | `npm test` after UI polish | PASS; 4 tests |
 | 2026-10-20 | `npm run build` after UI polish | PASS; Vite production bundle built |
+| 2026-10-20 | Mezo RPC `eth_getBalance` for deployer | 0 BTC at block 16263615, including pending state; chain ID 31611 |
+| 2026-10-20 | Mezo testnet MUSD `balanceOf` for deployer | 0 MUSD; testnet token contract code present |
+| 2026-10-20 | Node RPC TLS verification | PASS with `--use-system-ca` and certificate verification enabled; the saved-wallet deploy command now requires this path |
 
 ## Decision Log
 
@@ -76,6 +79,6 @@
 
 ## Next Action
 
-1. User requests test BTC from the official faucet for `0x7FF7007f9330E140fC6d7A0c65d2b71d6ed8b24c` and confirms funding. Verify the balance on Mezo testnet.
+1. Resolve the mismatch between the reported faucet funding and the onchain 0 BTC balance for `0x7FF7007f9330E140fC6d7A0c65d2b71d6ed8b24c`; obtain the faucet transaction hash or retry the BTC request. Verify the balance on Mezo testnet.
 2. Deploy SettleTag with `npm run deploy:saved:testnet` under the user's conditional authorization, capture explorer evidence, then configure and test the app.
 3. Review the live interface visually when browser access is available; address any issues.
