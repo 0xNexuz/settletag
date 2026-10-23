@@ -5,17 +5,17 @@
 - **Name:** SettleTag
 - **Location:** `outputs/settletag` in this task workspace
 - **Purpose:** One-time MUSD invoices with direct merchant settlement and onchain receipts.
-- **Current stage:** TESTNET RELEASE HARDENING
-- **Status:** Contract settlement and prior public web release VERIFIED. Easier test MUSD guidance, transaction signer checks, and SettleTag logo/favicon IMPLEMENTED locally; production release verification pending. New merchant signing flow remains unverified.
+- **Current stage:** LIVE TESTNET RELEASE
+- **Status:** Contract settlement, public release, easier test MUSD guidance, transaction signer checks, and SettleTag logo/favicon PUBLISHED. Build and tests passed; Vercel reported the production deployment Ready, and its favicon returned HTTP 200 through Vercel CLI. New merchant signing flow remains unverified.
 - **Last updated:** 2026-10-23
 
 ## Git State
 
 - **Branch:** `master` (local repository).
 - **HEAD:** Local live-testnet milestone committed; check `git log -1` for the current hash.
-- **Working tree:** Clean after the milestone commit; recheck on continuation. Local secrets and `.env.local` are ignored.
-- **Remote:** Public GitHub repository `https://github.com/0xNexuz/settletag`; `master` pushed and remote HEAD matched local at release check.
-- **Web:** Vercel project `xreyys-projects/settletag`; production alias `https://settletag.vercel.app`, deployment `dpl_GBQfBS4VCwS6T5mU3KoUx1RQ6KVg` Ready at release check.
+- **Working tree:** Recheck on continuation. Local secrets and `.env.local` are ignored.
+- **Remote:** Public GitHub repository `https://github.com/0xNexuz/settletag`; `master` pushed at commit `afa9336` for the logo and funding release.
+- **Web:** Vercel project `xreyys-projects/settletag`; production alias `https://settletag.vercel.app`, deployment `dpl_HfkV5EC8uccz5pQVPjoZLZGYcKHH` Ready at release check.
 - **Last verified milestone:** Public Vercel build succeeded. The production alias returned HTTP 200 with the app HTML, JS, CSS, and pixel artwork; the bundle contains the deployed contract and MUSD addresses. The Mezo RPC returned chain ID 31611 and `Access-Control-Allow-Origin: *` for the production origin. The public paid-invoice URL subsequently loaded in the in-app browser and showed Paid, 1.0 MUSD, and the expected merchant and payer. Wallet and Faucet navigation also worked. Invoice and wallet screens were visually checked at 390 px width with no horizontal page overflow. New merchant signing flow remains unverified.
 
 ## Approved Scope and Decisions
@@ -38,7 +38,7 @@
 - **Implemented, unverified live:** Browser wallet create/unlock/send flow and browser payment interaction have not been exercised in the UI.
 - **Pending:** Merchant user testing. The Mezo testnet borrow position remains open with 0.04 test BTC collateral locked and an initial 2001.8 test MUSD debt.
 - **Release hardening in progress:** The funding sheet now presents a small BTC-to-MUSD swap before the 1800 MUSD minimum borrow option. Signer chain/account matching is checked before create, send, approval, and payment actions; browser wallet account or chain changes clear its active signer. Response security headers are configured. No in-app swap transaction is claimed: the Mezo testnet pool had liquidity and a router quote succeeded, but a direct router swap static call reverted, so the app links to Mezo Swap instead.
-- **Brand asset in progress:** A transparent navy and orange receipt/check logo was generated, saved as `public/settletag-logo.png`, and referenced by the app header, favicon, and touch icon. The image and favicon have not yet been verified on the public deployment.
+- **Published brand asset:** A transparent navy and orange receipt/check logo was generated, saved as `public/settletag-logo.png`, and referenced by the app header, favicon, and touch icon. Vercel CLI returned HTTP 200 with `Content-Type: image/png` and the expected 544483-byte length for the deployment asset.
 
 ## Verification Log
 
@@ -93,6 +93,9 @@
 | 2026-10-23 | Logo and release hardening `npm run build` | PASS; Vite bundle built, and `dist/index.html` references `settletag-logo.png` as favicon and header image. |
 | 2026-10-23 | Logo and release hardening `npm test` | PASS; 5 tests: 2 contract, 3 wallet. Ganache used its Node.js fallback. |
 | 2026-10-23 | Logo asset alpha inspection | PASS; 1254 px RGBA PNG with transparent corner pixel. |
+| 2026-10-23 | GitHub push for logo and funding release | PASS; public `master` advanced from `522113b` to `afa9336`. |
+| 2026-10-23 | Vercel production deployment | PASS; deployment `dpl_HfkV5EC8uccz5pQVPjoZLZGYcKHH` Ready and aliased to `settletag.vercel.app`. |
+| 2026-10-23 | Production favicon request via `vercel curl` | PASS; HTTP 200, `image/png`, 544483 bytes, security headers present. Direct local curl was blocked by Avast WebShield, so no direct-browser visual sign-off is claimed. |
 
 ## Decision Log
 
@@ -126,10 +129,9 @@
 
 - **Decision:** Present Mezo Swap as the small-amount test MUSD route, with borrowing as an alternative. Recheck chain and selected account before browser wallet transactions and reset the signer on wallet account or network changes.
 - **Reason:** Mezo's faucet dispenses test BTC, not MUSD; borrowing requires a 1800 MUSD minimum loan. The documented testnet BTC/MUSD pool provides a smaller exchange route. The SettleTag embedded wallet cannot connect to Mezo Swap, so the UI explains a transfer through a browser extension. Direct swap integration was not verified, and wallet changes must not silently sign on another chain or account.
-- **Status:** Implemented locally; testnet release verification pending.
+- **Status:** Published on the public testnet app; build and local tests passed. Independent end-user swap and signing remain unverified.
 
 ## Next Action
 
-1. Publish and verify the funding sheet, response headers, and logo/favicon on the public testnet app.
-2. Have a merchant test invoice creation, link sharing, and reconciliation with a separate testnet account; collect feedback before claiming demand.
-3. Keep the testnet borrow position open for further testing; verify its live state again before any future repayment or withdrawal.
+1. Have a merchant test invoice creation, link sharing, and reconciliation with a separate testnet account; collect feedback before claiming demand.
+2. Keep the testnet borrow position open for further testing; verify its live state again before any future repayment or withdrawal.
