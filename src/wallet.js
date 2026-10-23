@@ -31,3 +31,20 @@ export function encryptedWalletBackup(storage = localStorage) {
   if (!encrypted) throw new Error('No local test wallet found.');
   return encrypted;
 }
+
+export async function assertSignerMatches(signer, expectedAddress, expectedChain, browserWallet = false) {
+  if (!signer) throw new Error('Create, unlock, or connect a wallet first.');
+  const chain = BigInt(await signer.provider.send('eth_chainId', []));
+  if (chain !== expectedChain) throw new Error('Switch your wallet to Mezo testnet before signing.');
+  const activeAddress = await signer.getAddress();
+  if (!expectedAddress || activeAddress.toLowerCase() !== expectedAddress.toLowerCase()) {
+    throw new Error('The active wallet changed. Reconnect it and review the transaction again.');
+  }
+  if (browserWallet) {
+    const accounts = await signer.provider.send('eth_accounts', []);
+    if (!Array.isArray(accounts) || accounts[0]?.toLowerCase() !== activeAddress.toLowerCase()) {
+      throw new Error('The browser wallet account changed. Reconnect it and review the transaction again.');
+    }
+  }
+  return signer;
+}

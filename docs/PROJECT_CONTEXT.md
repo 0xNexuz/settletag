@@ -5,9 +5,9 @@
 - **Name:** SettleTag
 - **Location:** `outputs/settletag` in this task workspace
 - **Purpose:** One-time MUSD invoices with direct merchant settlement and onchain receipts.
-- **Current stage:** LIVE TESTNET VERIFICATION / PUBLIC WEB RELEASE
-- **Status:** Contract settlement, public web release, paid-invoice display, Wallet/Faucet navigation, and 390 px mobile layout VERIFIED; new merchant signing flow unverified
-- **Last updated:** 2026-10-20
+- **Current stage:** TESTNET RELEASE HARDENING
+- **Status:** Contract settlement and prior public web release VERIFIED. Easier test MUSD guidance, transaction signer checks, and SettleTag logo/favicon IMPLEMENTED locally; production release verification pending. New merchant signing flow remains unverified.
+- **Last updated:** 2026-10-23
 
 ## Git State
 
@@ -29,6 +29,7 @@
 - User authorized creating a wallet, sharing its public address for faucet funding, and deploying the contract after confirming it was funded. Deployment completed.
 - User explicitly authorized using the funded test BTC to borrow MUSD for the payment test. A 0.04 test BTC collateral position was opened, 1800 test MUSD was minted, and a separate payer received 1 MUSD and 0.002 test BTC for gas. The 1 MUSD invoice was paid.
 - User authorized publishing the tested project to GitHub and Vercel. Public repository content should stay focused on the product, implementation, and technical evidence.
+- User requested an easier way to obtain test MUSD and another production readiness check. The supported small-amount path is Mezo Swap using faucet test BTC; borrowing remains available for users who want a loan position. The embedded SettleTag wallet cannot connect to Mezo Swap directly.
 
 ## Progress
 
@@ -36,6 +37,8 @@
 - **Verified live:** 0.05 test BTC reached deployer by block 16263757. SettleTag deployed at `0x53eCBb8891Df17927d40E4FbF234a80cB82EC456` in block 16263763; 1964 bytes of code found and `musd()` equals official testnet MUSD. A 1 MUSD invoice was created in block 16263784. The deployer borrowed 1800 test MUSD against 0.04 test BTC collateral, then sent 1 MUSD and 0.002 test BTC to a distinct payer. The payer approved and paid the invoice in block 16266460. Invoice state is Paid; merchant balance increased by exactly 1 MUSD; `InvoicePaid` and MUSD `Transfer` logs match the transaction.
 - **Implemented, unverified live:** Browser wallet create/unlock/send flow and browser payment interaction have not been exercised in the UI.
 - **Pending:** Merchant user testing. The Mezo testnet borrow position remains open with 0.04 test BTC collateral locked and an initial 2001.8 test MUSD debt.
+- **Release hardening in progress:** The funding sheet now presents a small BTC-to-MUSD swap before the 1800 MUSD minimum borrow option. Signer chain/account matching is checked before create, send, approval, and payment actions; browser wallet account or chain changes clear its active signer. Response security headers are configured. No in-app swap transaction is claimed: the Mezo testnet pool had liquidity and a router quote succeeded, but a direct router swap static call reverted, so the app links to Mezo Swap instead.
+- **Brand asset in progress:** A transparent navy and orange receipt/check logo was generated, saved as `public/settletag-logo.png`, and referenced by the app header, favicon, and touch icon. The image and favicon have not yet been verified on the public deployment.
 
 ## Verification Log
 
@@ -84,6 +87,12 @@
 | 2026-10-20 | Documentation refresh `npm test` | PASS; 4 tests: 2 contract, 2 wallet. Ganache used its Node.js fallback because a native uWS binary was unavailable. |
 | 2026-10-20 | Documentation refresh `npm run build` | PASS; Vite production bundle built. |
 | 2026-10-20 | 390 px mobile browser check | PASS; invoice and wallet forms stacked readably, paid receipt details remained visible, no horizontal page overflow. Browser viewport restored after the check. |
+| 2026-10-21 | Mezo testnet MUSD funding review | Official Mezo docs describe MUSD as minted via borrowing, with a 1800 MUSD minimum loan, and Mezo Swap supports BTC/MUSD. Testnet BTC/MUSD pool reserves were readable; a 0.0001 BTC router quote returned about 7.87 MUSD. A direct router swap static call reverted, so no direct swap was implemented or claimed. |
+| 2026-10-21 | `npm test` after funding and signer changes | PASS; 5 tests: 2 contract, 3 wallet. |
+| 2026-10-21 | Focused `node --test test/Wallet.test.js` after account-order check | PASS; 3 wallet tests. |
+| 2026-10-23 | Logo and release hardening `npm run build` | PASS; Vite bundle built, and `dist/index.html` references `settletag-logo.png` as favicon and header image. |
+| 2026-10-23 | Logo and release hardening `npm test` | PASS; 5 tests: 2 contract, 3 wallet. Ganache used its Node.js fallback. |
+| 2026-10-23 | Logo asset alpha inspection | PASS; 1254 px RGBA PNG with transparent corner pixel. |
 
 ## Decision Log
 
@@ -113,7 +122,14 @@
 - **Reason:** Initial total debt was 2001.8 MUSD, including 200 MUSD gas compensation. Under the [Mezo MUSD protocol documentation](https://github.com/mezo-org/musd/blob/main/docs/README.md), the GasPool supplies that compensation when a trove closes; the borrower must repay the debt excluding gas compensation, initially 1801.8 MUSD, plus accrued interest. The merchant held 1800 MUSD after the test payment, so the opening shortfall was 1.8 MUSD plus any accrued interest. Verify the live repayment quote before attempting closure. The position uses testnet assets only.
 - **Status:** Open; 0.04 test BTC collateral remains locked.
 
+### 2026-10-21 — Easier test MUSD and signer checks
+
+- **Decision:** Present Mezo Swap as the small-amount test MUSD route, with borrowing as an alternative. Recheck chain and selected account before browser wallet transactions and reset the signer on wallet account or network changes.
+- **Reason:** Mezo's faucet dispenses test BTC, not MUSD; borrowing requires a 1800 MUSD minimum loan. The documented testnet BTC/MUSD pool provides a smaller exchange route. The SettleTag embedded wallet cannot connect to Mezo Swap, so the UI explains a transfer through a browser extension. Direct swap integration was not verified, and wallet changes must not silently sign on another chain or account.
+- **Status:** Implemented locally; testnet release verification pending.
+
 ## Next Action
 
-1. Have a merchant test invoice creation, link sharing, and reconciliation with a separate testnet account; collect feedback before claiming demand.
-2. Keep the testnet borrow position open for further testing; verify its live state again before any future repayment or withdrawal.
+1. Publish and verify the funding sheet, response headers, and logo/favicon on the public testnet app.
+2. Have a merchant test invoice creation, link sharing, and reconciliation with a separate testnet account; collect feedback before claiming demand.
+3. Keep the testnet borrow position open for further testing; verify its live state again before any future repayment or withdrawal.

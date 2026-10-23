@@ -1,6 +1,6 @@
 import { ethers } from 'ethers';
 import settleTag from './artifacts/SettleTag.json';
-import { createTestWallet, unlockTestWallet, savedWalletAddress, encryptedWalletBackup } from './wallet.js';
+import { createTestWallet, unlockTestWallet, savedWalletAddress, encryptedWalletBackup, assertSignerMatches } from './wallet.js';
 import './style.css';
 
 const CHAIN = 31611n;
@@ -11,7 +11,7 @@ const CONTRACT = import.meta.env.VITE_CONTRACT_ADDRESS?.trim() || '0x53eCBb8891D
 const tokenAbi = ['function balanceOf(address) view returns (uint256)', 'function allowance(address,address) view returns (uint256)', 'function approve(address,uint256) returns (bool)', 'function transfer(address,uint256) returns (bool)'];
 const $ = (id) => document.getElementById(id);
 const rpc = new ethers.JsonRpcProvider(RPC);
-let signer, address, invoice, transfer;
+let signer, address, invoice, transfer, browserWallet = false, watchedProvider;
 
 function notice(value, hash) {
   const box = $('message');
@@ -43,13 +43,13 @@ function view(name) {
 document.querySelectorAll('[data-view]').forEach(el => el.addEventListener('click', () => view(el.dataset.view)));
 const journey = document.createElement('div');
 journey.className = 'journey';
-journey.innerHTML = '<div class="journey-heading"><span>WORKBOOK FLOW</span><strong>From wallet to verifiable receipt</strong></div><div class="journey-steps"><button type="button" data-step="wallet"><b>01</b><span>Prepare wallet<small>Create or connect a testnet account</small></span><i>↗</i></button><button type="button" data-step="faucet"><b>02</b><span>Get test funds<small>Request BTC from Mezo’s faucet</small></span><i>↗</i></button><button type="button" data-step="invoices"><b>03</b><span>Settle an invoice<small>Pay MUSD, verify the receipt</small></span><i>↗</i></button></div>';
+journey.innerHTML = '<div class="journey-heading"><span>WORKBOOK FLOW</span><strong>From wallet to verifiable receipt</strong></div><div class="journey-steps"><button type="button" data-step="wallet"><b>01</b><span>Prepare wallet<small>Create or connect a testnet account</small></span><i>↗</i></button><button type="button" data-step="faucet"><b>02</b><span>Get test MUSD<small>Get test BTC, then swap a small amount</small></span><i>↗</i></button><button type="button" data-step="invoices"><b>03</b><span>Settle an invoice<small>Pay MUSD, verify the receipt</small></span><i>↗</i></button></div>';
 document.querySelector('[data-panel="overview"] .build-note').before(journey);
 journey.querySelectorAll('[data-step]').forEach(el => el.addEventListener('click', () => view(el.dataset.step)));
 function setAddress(value) {
   address = value;
   $('wallet-address').textContent = value || 'No wallet selected';
-  $('faucet-address').textContent = value || 'Create or unlock a test wallet first.';
+  $('faucet-address').textContent = value || 'Connect a browser wallet or create a test wallet first.';
   $('create-wallet').hidden = Boolean(savedWalletAddress());
   $('unlock-wallet').hidden = !savedWalletAddress() || Boolean(signer);
 }
@@ -63,6 +63,7 @@ async function balances() {
   $('musd-balance').textContent = `${ethers.formatUnits(musd, 18)} MUSD`;
 }
 function needSigner() { if (!signer) throw new Error('Create, unlock, or connect a wallet first.'); return signer; }
+async function readySigner() { return assertSignerMatches(needSigner(), address, CHAIN, browserWallet); }
 function needContract() { if (!CONTRACT || !ethers.isAddress(CONTRACT)) throw new Error('Live invoices need a deployed contract. Set VITE_CONTRACT_ADDRESS after testnet deployment.'); }
 function contract(runner = rpc) { needContract(); return new ethers.Contract(CONTRACT, settleTag.abi, runner); }
 
@@ -70,7 +71,7 @@ $('create-wallet').addEventListener('click', async () => {
   const btn = $('create-wallet'); btn.disabled = true;
   try {
     const result = await createTestWallet($('wallet-password').value);
-    signer = result.wallet.connect(rpc); $('wallet-password').value = '';
+    signer = result.wallet.connect(rpc); browserWallet = false; $('wallet-password').value = '';
     setAddress(result.wallet.address);
     $('recovery-phrase').textContent = result.recoveryPhrase; $('recovery').hidden = false;
     notice('Test wallet created. Save the recovery phrase before funding it.');
@@ -81,7 +82,7 @@ $('unlock-wallet').addEventListener('click', async () => {
   const btn = $('unlock-wallet'); btn.disabled = true;
   try {
     const wallet = await unlockTestWallet($('wallet-password').value);
-    signer = wallet.connect(rpc); $('wallet-password').value = ''; setAddress(wallet.address);
+    signer = wallet.connect(rpc); browserWallet = false; $('wallet-password').value = ''; setAddress(wallet.address);
     notice('Local test wallet unlocked.'); await balances();
   } catch (e) { notice(err(e)); } finally { btn.disabled = false; }
 });
@@ -89,6 +90,7 @@ $('hide-recovery').addEventListener('click', () => { $('recovery-phrase').textCo
 $('connect-browser').addEventListener('click', async () => {
   try {
     if (!window.ethereum) throw new Error('Install an EVM browser wallet to use an extension account.');
+    watchBrowserWallet();
     let provider = new ethers.BrowserProvider(window.ethereum);
     await provider.send('eth_requestAccounts', []);
     if ((await provider.getNetwork()).chainId !== CHAIN) {
@@ -100,10 +102,23 @@ $('connect-browser').addEventListener('click', async () => {
     }
     provider = new ethers.BrowserProvider(window.ethereum);
     if ((await provider.getNetwork()).chainId !== CHAIN) throw new Error('Switch the wallet to Mezo testnet.');
-    signer = await provider.getSigner(); setAddress(await signer.getAddress());
+    signer = await provider.getSigner(); browserWallet = true; setAddress(await signer.getAddress());
     await balances(); notice('Browser wallet connected to Mezo testnet.');
   } catch (e) { notice(err(e)); }
 });
+function watchBrowserWallet() {
+  if (!window.ethereum?.on || watchedProvider === window.ethereum) return;
+  watchedProvider = window.ethereum;
+  for (const event of ['accountsChanged', 'chainChanged']) {
+    window.ethereum.on(event, () => {
+      if (!browserWallet) return;
+      signer = null; browserWallet = false; transfer = null;
+      $('btc-balance').textContent = '—'; $('musd-balance').textContent = '—';
+      $('send-review').hidden = true; setAddress(null);
+      notice('Browser wallet account or network changed. Reconnect it before signing.');
+    });
+  }
+}
 $('refresh-wallet').addEventListener('click', () => balances().then(() => notice('Balances refreshed.')).catch(e => notice(err(e))));
 async function copyAddress() {
   if (!address) throw new Error('Create or connect a wallet first.');
@@ -119,7 +134,7 @@ $('backup-wallet').addEventListener('click', () => {
 });
 $('send-tokens').addEventListener('click', async () => {
   try {
-    needSigner();
+    await readySigner();
     const token = $('send-token').value, to = $('send-to').value.trim(), raw = $('send-amount').value.trim();
     if (!ethers.isAddress(to)) throw new Error('Enter a valid 0x recipient address.');
     if (!/^\d+(\.\d{1,18})?$/.test(raw)) throw new Error('Enter a positive amount with at most 18 decimal places.');
@@ -138,7 +153,8 @@ $('confirm-send').addEventListener('click', async () => {
   const btn = $('confirm-send'); btn.disabled = true;
   try {
     if (!transfer) throw new Error('Review a transfer first.');
-    if ((await needSigner().getAddress()).toLowerCase() !== transfer.from.toLowerCase()) throw new Error('The active wallet changed. Review again.');
+    const activeSigner = await readySigner();
+    if ((await activeSigner.getAddress()).toLowerCase() !== transfer.from.toLowerCase()) throw new Error('The active wallet changed. Review again.');
     await checkNetwork();
     const tx = transfer.token === 'BTC'
       ? await signer.sendTransaction({ to: transfer.to, value: transfer.amount })
@@ -169,7 +185,7 @@ async function lookup() {
 $('create-form').addEventListener('submit', async e => {
   e.preventDefault(); const btn = e.submitter; btn.disabled = true;
   try {
-    needContract(); needSigner(); await checkNetwork();
+    needContract(); await readySigner(); await checkNetwork();
     const amount = ethers.parseUnits($('amount').value.trim(), 18);
     if (amount <= 0n || amount > 2n ** 128n - 1n) throw new Error('Enter a positive MUSD amount.');
     const deadline = BigInt(Math.floor(Date.now() / 1000) + Number($('expiry').value) * 86400);
@@ -185,13 +201,14 @@ $('lookup').addEventListener('click', () => lookup().then(() => notice('Invoice 
 $('pay').addEventListener('click', async () => {
   const btn = $('pay'); btn.disabled = true;
   try {
-    needContract(); needSigner(); await checkNetwork(); await lookup();
+    needContract(); await readySigner(); await checkNetwork(); await lookup();
     if (invoice.status !== 1n) throw new Error('Invoice is no longer open.');
     const token = new ethers.Contract(MUSD, tokenAbi, signer);
     if (await token.allowance(await signer.getAddress(), CONTRACT) < invoice.amount) {
       const approval = await token.approve(CONTRACT, invoice.amount);
       notice('Waiting for MUSD approval…', approval.hash); await approval.wait();
     }
+    await readySigner();
     const tx = await contract(signer).payInvoice(invoice.id);
     notice('Waiting for settlement…', tx.hash); await tx.wait();
     await lookup(); await balances(); notice('MUSD paid to the merchant. Receipt recorded.', tx.hash);
