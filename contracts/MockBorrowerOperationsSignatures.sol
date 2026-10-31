@@ -7,7 +7,8 @@ interface IMintable {
 
 /// @dev Local test double for Mezo's BorrowerOperationsSignatures. The EIP-712 domain, type strings,
 /// digest construction and nonce handling copy mezo-org/musd so tests exercise the same signatures the
-/// app produces for Mezo testnet. Trove accounting is simplified: no price, fees or hints.
+/// app produces for Mezo testnet. Like Mezo, a draw ends with a zero-value BTC call to the recipient.
+/// Trove accounting is simplified: no price, fees or hints.
 contract MockBorrowerOperationsSignatures {
     bytes32 private constant DOMAIN_TYPEHASH =
         keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
@@ -61,6 +62,9 @@ contract MockBorrowerOperationsSignatures {
         require(_amount > 0, "BorrowerOps: Debt increase requires non-zero debtChange");
         troveDebt[_borrower] += _amount;
         IMintable(musd).mint(_recipient, _amount - mintShortfall);
+        // Mezo's ActivePool.sendCollateral(recipient, 0) after every debt increase.
+        (bool sent, ) = _recipient.call{value: 0}("");
+        require(sent, "Sending BTC failed");
     }
 
     function _verifySignature(bytes32 _typeHash, bytes memory _data, address _borrower, bytes memory _signature, uint256 _deadline) internal {

@@ -77,6 +77,8 @@ with sync_playwright() as p:
     inv1 = create_invoice(merchant, 25)
     check('v2 invoice shows fee and net', '0.13 MUSD' in merchant.inner_text('#detail-fee') and '24.88 MUSD' in merchant.inner_text('#detail-net'), merchant.inner_text('#detail-fee') + ' / ' + merchant.inner_text('#detail-net'))
     check('v2 invoice on v2 contract', 'v2' in merchant.inner_text('#detail-contract'))
+    share = merchant.input_value('#share-link')
+    check('share link names the contract', f"contract={SIM['v2']}" in share, share)
     merchant.screenshot(path=str(SHOTS / '01-merchant-invoice.png'), full_page=True)
 
     p_ctx, payer, p_addr, p_errors = new_wallet(browser, V2_APP, btc=0.2)
@@ -167,6 +169,18 @@ with sync_playwright() as p:
     # v2 app still reads v1 receipts
     load_invoice(merchant, v1_inv)
     check('v2 app falls back to v1 receipts', 'v1' in merchant.inner_text('#detail-contract') and merchant.inner_text('#detail-status') == 'Paid')
+
+    # A v1 invoice that copies a v2 invoice's ID must not hijack the v2 link or a manual lookup.
+    inv5 = create_invoice(merchant, 7)
+    v2_link = merchant.input_value('#share-link')
+    rpc('eth_sendTransaction', [{'from': SIM['operator'], 'to': SIM['legacy'], 'gas': hex(300000),
+        'data': '0xf9028084' + inv5[2:] + hex(10**18)[2:].rjust(64, '0') + hex(2_000_000_000)[2:].rjust(64, '0')}])
+    merchant.goto(v2_link)
+    expect(merchant.locator('#detail-contract')).to_contain_text('v2', timeout=TIMEOUT)
+    check('contract in link resolves the right invoice', merchant.inner_text('#detail-amount') == '7.00 MUSD', merchant.inner_text('#detail-amount'))
+    merchant.fill('#invoice-id', inv5)
+    act(merchant, '#lookup', 'exists on both SettleTag contracts')
+    check('ambiguous manual lookup is refused', True)
 
     page_errors = m_errors + p_errors + m1_errors + p1_errors
     check('no uncaught page errors', not page_errors, '; '.join(page_errors[:3]))

@@ -20,10 +20,13 @@ export const ABI = {
     'function withdrawMUSD(uint256 amount, address upperHint, address lowerHint)',
     'function borrowingRate() view returns (uint256)',
     'function minNetDebt() view returns (uint256)',
-    'function getBorrowingFee(uint256 debt) view returns (uint256)'
+    'function getBorrowingFee(uint256 debt) view returns (uint256)',
+    'function getEntireSystemColl() view returns (uint256)',
+    'function getEntireSystemDebt() view returns (uint256)'
   ],
   borrowerOperationsSignatures: [
-    'function getNonce(address user) view returns (uint256)'
+    'function getNonce(address user) view returns (uint256)',
+    'function eip712Domain() view returns (bytes1 fields, string name, string version, uint256 chainId, address verifyingContract, bytes32 salt, uint256[] extensions)'
   ],
   troveManager: [
     'function getTroveStatus(address borrower) view returns (uint8)',
@@ -44,17 +47,27 @@ export const ABI = {
 };
 
 export const ONE = 10n ** 18n;
-export const MCR = 11n * 10n ** 17n; // 110%: Mezo liquidates below this in normal mode
-export const CCR = 15n * 10n ** 17n; // 150%: Recovery Mode threshold
+export const MCR = 11n * 10n ** 17n; // 110%: Mezo liquidates troves below this
+export const CCR = 15n * 10n ** 17n; // 150%: system-wide floor; below it Mezo enters Recovery Mode
 export const SAFE_ICR = CCR; // SettleTag will not offer a borrow that leaves a trove below 150%
 export const TROVE_STATUS = ['None', 'Active', 'Closed', 'Liquidated', 'Redeemed'];
 
 const SIGNATURE_DOMAIN = { name: 'BorrowerOperationsSignatures', version: '1' };
 
+/** Reads the signing domain from Mezo and checks it is the contract and chain SettleTag expects. */
+export async function readSignatureDomain(provider) {
+  const d = await mezoContracts(provider).signatures.eip712Domain();
+  const domain = { name: d.name, version: d.version, chainId: d.chainId, verifyingContract: ethers.getAddress(d.verifyingContract) };
+  if (domain.chainId !== MEZO.chainId || domain.verifyingContract !== ethers.getAddress(MEZO.borrowerOperationsSignatures)) {
+    throw new Error('Mezo’s signing contract reported an unexpected domain. Nothing was signed.');
+  }
+  return domain;
+}
+
 /** EIP-712 request letting SettleTag receive `amount` MUSD drawn from the borrower's trove. */
-export function withdrawMUSDTypedData({ chainId = MEZO.chainId, verifyingContract = MEZO.borrowerOperationsSignatures, amount, borrower, recipient, nonce, deadline }) {
+export function withdrawMUSDTypedData({ chainId = MEZO.chainId, verifyingContract = MEZO.borrowerOperationsSignatures, domain, amount, borrower, recipient, nonce, deadline }) {
   return {
-    domain: { ...SIGNATURE_DOMAIN, chainId, verifyingContract },
+    domain: domain ?? { ...SIGNATURE_DOMAIN, chainId, verifyingContract },
     types: {
       WithdrawMUSD: [
         { name: 'amount', type: 'uint256' },
@@ -69,9 +82,9 @@ export function withdrawMUSDTypedData({ chainId = MEZO.chainId, verifyingContrac
 }
 
 /** EIP-712 request opening a trove for the borrower with `assetAmount` BTC and sending `debtAmount` MUSD to SettleTag. */
-export function openTroveTypedData({ chainId = MEZO.chainId, verifyingContract = MEZO.borrowerOperationsSignatures, assetAmount, debtAmount, borrower, recipient, nonce, deadline }) {
+export function openTroveTypedData({ chainId = MEZO.chainId, verifyingContract = MEZO.borrowerOperationsSignatures, domain, assetAmount, debtAmount, borrower, recipient, nonce, deadline }) {
   return {
-    domain: { ...SIGNATURE_DOMAIN, chainId, verifyingContract },
+    domain: domain ?? { ...SIGNATURE_DOMAIN, chainId, verifyingContract },
     types: {
       OpenTrove: [
         { name: 'assetAmount', type: 'uint256' },
@@ -96,8 +109,8 @@ export function liquidationPrice(coll, debt) {
   return coll === 0n ? 0n : debt * MCR / coll;
 }
 
-export function healthLabel(icr, recoveryMode = false) {
-  if (icr < MCR || (recoveryMode && icr < CCR)) return { tone: 'danger', label: 'Liquidatable' };
+export function healthLabel(icr) {
+  if (icr < MCR) return { tone: 'danger', label: 'Liquidatable' };
   if (icr < CCR) return { tone: 'danger', label: 'At risk' };
   if (icr < 2n * ONE) return { tone: 'warn', label: 'Watch' };
   return { tone: 'good', label: 'Healthy' };
@@ -108,12 +121,17 @@ export function borrowingFee(amount, borrowingRate) {
 }
 
 /** Effect of drawing `amount` more MUSD from an existing trove. */
-export function projectDraw({ coll, debt, price, borrowingRate, amount, capacity, recoveryMode = false }) {
+export function projectDraw({ coll, debt, price, borrowingRate, amount, capacity, recoveryMode = false, systemColl, systemDebt }) {
   const fee = recoveryMode ? 0n : borrowingFee(amount, borrowingRate);
   const newDebt = debt + amount + fee;
   const icr = collateralRatio(coll, newDebt, price);
   const problems = [];
-  if (icr < SAFE_ICR) problems.push('It would leave your trove below 150% collateral. Add BTC collateral first.');
+  // In Recovery Mode Mezo only allows more debt if the same step raises the trove's ratio, which a draw cannot.
+  if (recoveryMode) problems.push('Mezo is in Recovery Mode, so it does not allow borrowing more from an existing trove right now. Pay from wallet MUSD instead.');
+  else if (icr < SAFE_ICR) problems.push('It would leave your trove below 150% collateral. Add BTC collateral first.');
+  if (!recoveryMode && systemColl !== undefined && collateralRatio(systemColl, systemDebt + amount + fee, price) < CCR) {
+    problems.push('Mezo would refuse it: the whole system would fall below 150% collateral.');
+  }
   if (capacity !== undefined && newDebt > capacity) problems.push('It exceeds this trove’s Mezo borrowing capacity. Repay or refinance first.');
   return { fee, newDebt, icr, liquidationPrice: liquidationPrice(coll, newDebt), ok: problems.length === 0, problems };
 }
@@ -126,13 +144,16 @@ export function minimumOpenBorrow(minNetDebt, borrowingRate) {
 }
 
 /** Effect of opening a trove with `collateral` BTC that borrows `debtAmount` MUSD. */
-export function projectOpen({ collateral, debtAmount, price, borrowingRate, gasCompensation, minNetDebt, recoveryMode = false }) {
+export function projectOpen({ collateral, debtAmount, price, borrowingRate, gasCompensation, minNetDebt, recoveryMode = false, systemColl, systemDebt }) {
   const fee = recoveryMode ? 0n : borrowingFee(debtAmount, borrowingRate);
   const totalDebt = debtAmount + fee + gasCompensation;
   const icr = collateralRatio(collateral, totalDebt, price);
   const problems = [];
-  if (debtAmount + fee < minNetDebt) problems.push(`Mezo’s minimum loan is ${ethers.formatUnits(minNetDebt, 18)} MUSD including the borrowing fee.`);
+  if (debtAmount + fee < minNetDebt) problems.push(`Mezo’s minimum loan is currently ${ethers.formatUnits(minNetDebt, 18)} MUSD including the borrowing fee.`);
   if (icr < SAFE_ICR) problems.push('Add more BTC collateral: the new trove must start at 150% or higher.');
+  if (!recoveryMode && systemColl !== undefined && collateralRatio(systemColl + collateral, systemDebt + totalDebt, price) < CCR) {
+    problems.push('Mezo would refuse it: the whole system would fall below 150% collateral.');
+  }
   return { fee, totalDebt, icr, liquidationPrice: liquidationPrice(collateral, totalDebt), ok: problems.length === 0, problems };
 }
 
@@ -158,7 +179,7 @@ export function mezoContracts(runner) {
 export async function readTrove(provider, address) {
   const c = mezoContracts(provider);
   const price = await c.priceFeed.fetchPrice();
-  const [status, amounts, capacity, rate, tcr, recoveryMode, borrowingRate, minNetDebt, gasCompensation] = await Promise.all([
+  const [status, amounts, capacity, rate, tcr, recoveryMode, borrowingRate, minNetDebt, gasCompensation, systemColl, systemDebt] = await Promise.all([
     c.troveManager.getTroveStatus(address),
     c.troveManager.getEntireDebtAndColl(address),
     c.troveManager.getTroveMaxBorrowingCapacity(address),
@@ -167,7 +188,9 @@ export async function readTrove(provider, address) {
     c.troveManager.checkRecoveryMode(price),
     c.borrowerOperations.borrowingRate(),
     c.borrowerOperations.minNetDebt(),
-    c.troveManager.MUSD_GAS_COMPENSATION()
+    c.troveManager.MUSD_GAS_COMPENSATION(),
+    c.borrowerOperations.getEntireSystemColl(),
+    c.borrowerOperations.getEntireSystemDebt()
   ]);
   const active = Number(status) === 1;
   const coll = amounts.coll;
@@ -178,8 +201,10 @@ export async function readTrove(provider, address) {
     principal: amounts.principal, interest: amounts.interest,
     icr, liquidationPrice: active ? liquidationPrice(coll, debt) : 0n,
     capacity, capacityLeft: capacity > debt ? capacity - debt : 0n,
-    interestRateBps: Number(rate), tcr, recoveryMode, borrowingRate, minNetDebt, gasCompensation,
-    health: active ? healthLabel(icr, recoveryMode) : null
+    interestRateBps: Number(rate), tcr, recoveryMode, borrowingRate, minNetDebt, gasCompensation, systemColl, systemDebt,
+    // Mezo charges no borrowing fee in Recovery Mode.
+    effectiveRate: recoveryMode ? 0n : borrowingRate,
+    health: active ? healthLabel(icr) : null
   };
 }
 

@@ -6,19 +6,19 @@ Wave 1 feedback (civ_defi_mezo, 2026-10-30): SettleTag used MUSD only through ER
 
 | Feedback | Change | Where |
 |---|---|---|
-| Borrow MUSD against BTC through BorrowerOperations to fund an invoice, in the app | Payers can pay an invoice by drawing MUSD from their trove or by opening one. With v2 this is one EIP-712 signature to Mezo's `BorrowerOperationsSignatures` plus one SettleTag transaction that borrows, settles and records the receipt atomically. With v1 the app calls `BorrowerOperations.withdrawMUSD` or `openTrove`, then approves and pays. | `contracts/SettleTag.sol` (`payWithTroveDraw`, `payByOpeningTrove`), Invoices sheet option B |
+| Borrow MUSD against BTC through BorrowerOperations to fund an invoice, in the app | Payers can pay an invoice by drawing MUSD from their trove or by opening one. With v2 this is one EIP-712 signature to Mezo's `BorrowerOperationsSignatures` plus one SettleTag transaction that borrows, settles and records the receipt atomically. With v1 the app calls `BorrowerOperations.withdrawMUSD` or `openTrove`, then approves and pays. Tested against local stand-ins for Mezo only. | `contracts/SettleTag.sol` (`payWithTroveDraw`, `payByOpeningTrove`), Invoices sheet option B |
 | Show trove health | Trove sheet: collateral ratio with 110% / 150% / 200% bands, liquidation price, BTC price, collateral, debt, remaining borrowing capacity, interest rate, system TCR and Recovery Mode. The borrow preview shows the ratio and liquidation price before and after. | Trove sheet, `src/mezo.js` |
-| "Not just in your operator script" | Opening a trove, adding collateral and repaying debt now happen in the app through `BorrowerOperations`. The operator script is no longer needed to source MUSD. | Trove sheet |
-| Verify the contract on the Mezo explorer | `scripts/verify.js` checks the source against on-chain bytecode, then submits standard-JSON verification to `api.explorer.test.mezo.org` for v1 and v2. The v1 input reproduces its recorded 1964-byte runtime code. | `npm run verify:testnet`, `verification/` |
+| "Not just in your operator script" | Opening a trove, adding collateral and repaying debt now happen in the app through `BorrowerOperations` (exercised against the local simulator). The operator script is no longer needed to source MUSD. | Trove sheet |
+| Verify the contract on the Mezo explorer | `scripts/verify.js` checks the source against on-chain bytecode, then submits standard-JSON verification to `api.explorer.test.mezo.org` for v1 and v2. The v1 input reproduces the deployment artifact and the recorded 1964-byte code size. Not yet submitted: the explorer was unreachable from the build environment. | `npm run verify:testnet`, `verification/` |
 | Stated business model | 0.5% settlement fee (contract cap 1%), fixed per invoice; SettleTag Pro at 5 MUSD per 30 days for 0% fees. Fee and plan revenue are tracked onchain. | Contract, Invoices sheet, Overview ledger |
-| Real third-party merchants and payers | Distinct merchants, payers, invoices, volume and trove-funded volume are counted onchain and shown on the Overview sheet. Self-payment is rejected so the counts reflect real counterparties. Recruiting merchants is a team task (below). | Overview ledger |
+| Real third-party merchants and payers | Distinct merchants, payers, invoices, volume and trove-funded volume are counted onchain and shown on the Overview sheet. Self-payment is rejected and merchants count only once someone else pays them, but throwaway wallets can still inflate the numbers, so evidence should be explorer links per pilot invoice. Recruiting merchants is a team task (below). | Overview ledger |
 
 ## Still to do before submitting
 
 1. Deploy v2 from the deployment wallet: `npm run deploy:saved:testnet`. This writes the address to `src/deployment.json`.
 2. Verify both contracts: `npm run verify:testnet`. Confirm the explorer shows the source.
 3. Commit `src/deployment.json` and redeploy the web app.
-4. Run one trove-funded payment on testnet with two separate wallets and record the transaction in `docs/TESTNET_EVIDENCE.md`. Local tests use a Mezo mock; that one live payment proves the signature path against Mezo's real contract.
+4. Run one trove-funded payment on testnet with two separate wallets (draw from an existing trove; optionally also open-and-pay) and record the transactions in `docs/TESTNET_EVIDENCE.md`. Local tests use stand-ins for Mezo; only a live payment proves the signature path against Mezo's real contracts.
 5. Recruit merchants and payers (below).
 
 ## Merchant pilot
