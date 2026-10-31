@@ -1,5 +1,5 @@
 import { ethers } from 'ethers';
-import settleTag from '../src/artifacts/SettleTag.json' with { type: 'json' };
+import { LEGACY_ABI } from '../src/legacy.js';
 import { loadLocalTestWallet } from './local-test-wallet.js';
 import { confirmed } from './confirmed.js';
 
@@ -10,7 +10,8 @@ const MUSD = '0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503';
 const provider = new ethers.JsonRpcProvider('https://rpc.test.mezo.org');
 if ((await provider.getNetwork()).chainId !== 31611n) throw new Error('Wrong network.');
 const payer = loadLocalTestWallet('mezo-test-payer').connect(provider);
-const contract = new ethers.Contract(CONTRACT, settleTag.abi, payer);
+// Historical v1 payment script; v1 has its own ABI.
+const contract = new ethers.Contract(CONTRACT, LEGACY_ABI, payer);
 const token = new ethers.Contract(MUSD, [
   'function balanceOf(address) view returns(uint256)',
   'function allowance(address,address) view returns(uint256)',

@@ -1,22 +1,9 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import solc from 'solc';
+import { root, standardInput } from './solc-input.js';
 
-const root = path.resolve(import.meta.dirname, '..');
-const sources = Object.fromEntries(
-  ['SettleTag.sol', 'MockMUSD.sol'].map((name) => [name, {
-    content: fs.readFileSync(path.join(root, 'contracts', name), 'utf8')
-  }])
-);
-const input = {
-  language: 'Solidity',
-  sources,
-  settings: {
-    optimizer: { enabled: true, runs: 200 },
-    evmVersion: 'london',
-    outputSelection: { '*': { '*': ['abi', 'evm.bytecode.object'] } }
-  }
-};
+const input = standardInput(['SettleTag.sol', 'MockMUSD.sol', 'MockBorrowerOperationsSignatures.sol']);
 const result = JSON.parse(solc.compile(JSON.stringify(input)));
 const errors = result.errors?.filter((item) => item.severity === 'error') ?? [];
 if (errors.length) {
