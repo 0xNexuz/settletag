@@ -1,0 +1,10 @@
+{
+  "network": "mezo-testnet",
+  "chainId": 31611,
+  "settleTag": null,
+  "legacy": {
+    "address": "0x53eCBb8891Df17927d40E4FbF234a80cB82EC456",
+    "deployTx": "0x04eceb20eac2bb22cb0503f217172bf762c9cc6c184e4e2dcaeab53b5926584c",
+    "block": 16263763
+  }
+}

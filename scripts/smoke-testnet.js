@@ -1,10 +1,11 @@
 import { ethers } from 'ethers';
 import settleTag from '../src/artifacts/SettleTag.json' with { type: 'json' };
+import deployment from '../src/deployment.json' with { type: 'json' };
 import { loadLocalTestWallet } from './local-test-wallet.js';
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '1';
-const address = process.env.CONTRACT_ADDRESS;
-if (!address || !ethers.isAddress(address)) throw new Error('Set CONTRACT_ADDRESS to the deployed SettleTag contract.');
+const address = process.env.CONTRACT_ADDRESS || deployment.settleTag?.address;
+if (!address || !ethers.isAddress(address)) throw new Error('Deploy SettleTag v2 first, or set CONTRACT_ADDRESS to a v2 deployment.');
 const provider = new ethers.JsonRpcProvider('https://rpc.test.mezo.org');
 if ((await provider.getNetwork()).chainId !== 31611n) throw new Error('Wrong network.');
 if (await provider.getCode(address) === '0x') throw new Error('SettleTag contract code missing.');

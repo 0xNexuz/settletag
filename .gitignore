@@ -7,3 +7,4 @@ src/artifacts/
 coverage/
 
 .vercel
+test/e2e/.sim.json
