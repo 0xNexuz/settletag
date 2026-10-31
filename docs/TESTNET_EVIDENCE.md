@@ -1,6 +1,6 @@
 # Mezo testnet evidence
 
-SettleTag settled one real testnet MUSD invoice from a distinct payer to its merchant. Chain ID: `31611`. Official testnet MUSD: `0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503`.
+SettleTag settled a wallet-funded v1 invoice and a Mezo trove-funded v2 invoice on testnet. Both used distinct payer and merchant addresses controlled by the project; independent user adoption has not been demonstrated. Chain ID: `31611`. Official testnet MUSD: `0x118917a40FAF1CD7a13dB0Ef56C86De7973Ac503`.
 
 | Item | Value | Explorer proof |
 |---|---|---|
@@ -22,3 +22,11 @@ SettleTag settled one real testnet MUSD invoice from a distinct payer to its mer
 The [public app opens this invoice](https://settletag.vercel.app/?invoice=0x7d8aec69ac6d214cde80139bffe33989e6dd58006e561c6942964059e190516f). On 2026-10-20, an in-app browser displayed its Paid status, 1.0 MUSD amount, expected merchant and payer; the Wallet and Faucet sheets also opened. The invoice and wallet screens were visually checked at a 390 px mobile viewport without horizontal page overflow. A new merchant's signing flow has not been independently user tested. The onchain transaction proof and local contract tests are separate from this UI check.
 
 The borrow position remains open; 0.04 test BTC collateral is still locked. No mainnet funds were used. This prototype has not received a third-party audit.
+
+## V2: one-transaction trove-funded settlement
+
+V2 was [deployed](https://explorer.test.mezo.org/tx/0x041bfd8e7973e45a4d0886bacb00a6802023ec9a1e4f8e1c1af9d939ab0b25a6) at [`0x7eDcC1223154413E314DD071d6Fb0E0a42A71A17`](https://explorer.test.mezo.org/address/0x7eDcC1223154413E314DD071d6Fb0E0a42A71A17?tab=contract) in block `16491131`. Its owner and treasury are `0x7FF7007f9330E140fC6d7A0c65d2b71d6ed8b24c`, the settlement fee is 50 basis points, and the Pro price is 5 MUSD. The onchain code matched the locally compiled source. The explorer accepted source verification for both v1 and v2.
+
+The distinct test merchant `0x4aB359d5459E62D6a7912C5709c83d9E77255621` [created](https://explorer.test.mezo.org/tx/0xd1fe929aa3610f3894f63ec1f4d8b3e8cb2cfec7cd346da1bff34640a8b0cefa) a 1 MUSD invoice with ID `0x509acee3658928085d319f7e03b50d734b0159963b57b961498720521dd830a5`. The payer `0x7FF7007f9330E140fC6d7A0c65d2b71d6ed8b24c` signed a Mezo `WithdrawMUSD` request naming v2 as recipient and called `payWithTroveDraw` in [transaction `0x8b24fbca…896e3c9`](https://explorer.test.mezo.org/tx/0x8b24fbca7a6649b95fe8c3b65cc53289bc56abb2a7a7979a02d4ba900896e3c9), block `16491268`.
+
+The payment transaction succeeded and emitted both `TroveBorrowed` and `InvoicePaid`. Invoice state is Paid (`2`) with funding type TroveDraw (`2`) and the expected payer. MUSD transfer logs show exactly 1 MUSD reaching SettleTag from Mezo, 0.995 MUSD reaching the merchant, and 0.005 MUSD reaching the treasury. SettleTag retained 0 MUSD. Mezo's signature nonce advanced by one. The payer's trove retained 0.04 BTC collateral; total debt rose from about 2002.4145 MUSD before the draw to about 2003.4156 MUSD afterward, including the 1 MUSD draw, borrowing fee, and accrued interest. The position remains open.

@@ -5,8 +5,8 @@
 - **Name:** SettleTag
 - **Location:** `outputs/settletag` in this task workspace
 - **Purpose:** One-time MUSD invoices with direct merchant settlement and onchain receipts.
-- **Current stage:** WAVE 2 BUILD (v2 contract and Mezo-native app flows implemented; v2 not yet deployed)
-- **Status:** v1 remains live on Mezo testnet. v2 adds trove-funded settlement through Mezo `BorrowerOperationsSignatures`, a settlement fee and Pro plan, and onchain adoption counters. The app gained a Trove sheet and borrow-to-pay that work with v1 now and switch to v2 once deployed. Verified locally only (unit tests and a browser run against a local Mezo simulator); no v2 testnet transaction yet.
+- **Current stage:** WAVE 2 LIVE TESTNET (v2 contract verified and trove-funded payment proven; public web update pending)
+- **Status:** V2 is deployed at `0x7eDcC1223154413E314DD071d6Fb0E0a42A71A17`; both contract sources are explorer verified. A 1 MUSD v2 invoice was paid from an existing Mezo trove in one transaction with 0.995 MUSD to merchant and 0.005 MUSD to treasury. The new address is recorded locally and still needs a GitHub/Vercel release. Independent merchant use remains unverified.
 - **Last updated:** 2026-10-31
 
 ## Git State
@@ -14,9 +14,9 @@
 - **Branch:** `master` (local repository).
 - **HEAD:** Local live-testnet milestone committed; check `git log -1` for the current hash.
 - **Working tree:** Recheck on continuation. Local secrets and `.env.local` are ignored.
-- **Remote:** Public GitHub repository `https://github.com/0xNexuz/settletag`; `master` at `b3a9bc7` (Wave 2 work), also on branch `wave2-mezo-native`.
+- **Remote:** Public GitHub repository `https://github.com/0xNexuz/settletag`; `master` was at `1e57e14` before the v2 deployment record and live evidence update. Recheck after publication.
 - **Web:** Vercel project `xreyys-projects/settletag`; production alias `https://settletag.vercel.app`, deployment `dpl_HfkV5EC8uccz5pQVPjoZLZGYcKHH` Ready at release check.
-- **Last verified milestone:** Public Vercel build succeeded. The production alias returned HTTP 200 with the app HTML, JS, CSS, and pixel artwork; the bundle contains the deployed contract and MUSD addresses. The Mezo RPC returned chain ID 31611 and `Access-Control-Allow-Origin: *` for the production origin. The public paid-invoice URL subsequently loaded in the in-app browser and showed Paid, 1.0 MUSD, and the expected merchant and payer. Wallet and Faucet navigation also worked. Invoice and wallet screens were visually checked at 390 px width with no horizontal page overflow. New merchant signing flow remains unverified.
+- **Last verified milestone:** V2 deployment, v1/v2 source verification, and one real trove-funded settlement passed on Mezo testnet. Local tests and build passed after recording the deployment. The local browser rendered the existing active trove at about 154.73% collateral ratio. The production web deployment with the v2 address still needs verification; new merchant signing in the public UI remains unverified.
 
 ## Approved Scope and Decisions
 
@@ -30,6 +30,7 @@
 - User explicitly authorized using the funded test BTC to borrow MUSD for the payment test. A 0.04 test BTC collateral position was opened, 1800 test MUSD was minted, and a separate payer received 1 MUSD and 0.002 test BTC for gas. The 1 MUSD invoice was paid.
 - User authorized publishing the tested project to GitHub and Vercel. Public repository content should stay focused on the product, implementation, and technical evidence.
 - 2026-10-31: Team shared Mezo Wave 1 judge feedback (integration level 2: plain `transferFrom`) and asked for it to be fixed in this repository: Mezo-specific borrowing or trove health inside the app, explorer verification, third-party usage, and a business model. Pushing to the repository is authorized by that request; deploying, verifying on the explorer and spending testnet funds remain with the team's deployment wallet.
+- 2026-10-31: User explicitly approved deploying v2 from the saved project wallet with that wallet as treasury, a 0.5% fee and 5 MUSD Pro price, verifying v1/v2 source, and one small trove-funded test payment that increases the existing testnet debt.
 - User requested an easier way to obtain test MUSD and another production readiness check. The supported small-amount path is Mezo Swap using faucet test BTC; borrowing remains available for users who want a loan position. The embedded SettleTag wallet cannot connect to Mezo Swap directly.
 
 ## Progress
@@ -40,6 +41,8 @@
 - **Pending:** Merchant user testing. The Mezo testnet borrow position remains open with 0.04 test BTC collateral locked and an initial 2001.8 test MUSD debt.
 - **Release hardening in progress:** The funding sheet now presents a small BTC-to-MUSD swap before the 1800 MUSD minimum borrow option. Signer chain/account matching is checked before create, send, approval, and payment actions; browser wallet account or chain changes clear its active signer. Response security headers are configured. No in-app swap transaction is claimed: the Mezo testnet pool had liquidity and a router quote succeeded, but a direct router swap static call reverted, so the app links to Mezo Swap instead.
 - **Wave 2 (local, unverified on testnet):** `contracts/SettleTag.sol` v2 adds `payWithTroveDraw` (Mezo `withdrawMUSDWithSignature`) and `payByOpeningTrove` (Mezo `openTroveWithSignature`, loan remainder refunded to payer), a 0.5% fee fixed per invoice (cap 1%), SettleTag Pro (5 MUSD per 30 days, 0% fee), self-payment rejection, `stats()` counters, and owner `returnStrandedMUSD` for signatures submitted outside SettleTag. App: Trove sheet (ratio, liquidation price, capacity, TCR, Recovery Mode; add collateral, repay, open trove), borrow-to-pay on invoices (v2 atomic; v1 three transactions), fee preview, Pro purchase, live ledger, and v1 receipt fallback. Mezo testnet addresses and ABIs taken from `mezo-org/musd` matsnet deployment artifacts (commit `da7888a`).
+- **Wave 2 live:** V2 deployed at `0x7eDcC1223154413E314DD071d6Fb0E0a42A71A17` in block 16491131 with 0.5% fee, 5 MUSD Pro price, project wallet as owner/treasury. V1 and v2 source verified on explorer. A separate project test wallet created a 1 MUSD v2 invoice, and the deployer paid it by drawing MUSD from its existing Mezo trove in a single transaction; matching events, balances, nonce, invoice state, and increased debt were independently read. See `docs/TESTNET_EVIDENCE.md`.
+- **Wave 2 unverified live:** Opening a new trove and paying, trove management transactions, Pro purchase, and genuine third-party merchant/payer activity. The original testnet trove remains open with 0.04 BTC collateral and additional debt from the v2 draw.
 - **Published brand asset:** A transparent navy and orange receipt/check logo was generated, saved as `public/settletag-logo.png`, and referenced by the app header, favicon, and touch icon. Vercel CLI returned HTTP 200 with `Content-Type: image/png` and the expected 544483-byte length for the deployment asset.
 
 ## Verification Log
@@ -108,6 +111,12 @@
 | 2026-10-31 | Browser end-to-end after review fixes | PASS; 29/29 checks, adding contract-named share links and refusal of an ID copied onto v1. The simulator now makes the zero-value callback and serves `eip712Domain`. |
 | 2026-10-31 | GitHub push and Vercel production build | PASS; `master` advanced from `739de6f` to `b3a9bc7`; Vercel git deployment `dpl_HraNR6fW9XXtHQvWh5u8yZdBNrdv` Ready and aliased to `settletag.vercel.app`. The site runs in v1 mode (no v2 address recorded). The new Trove and borrow-to-pay flows were not exercised against live Mezo. |
 | 2026-10-31 | `scripts/deploy.js` and `scripts/verify.js --dry-run` on the local simulator | PASS; deployment record written and restored; recompiled v1 and v2 matched on-chain runtime bytecode with immutables masked. Explorer submission not run: Mezo hosts are unreachable from the build environment. |
+| 2026-10-31 | Windows-user wallet check | PASS under original Windows user; sandbox account could not decrypt the Windows-bound local wallet. Public address matched `0x7FF7007f9330E140fC6d7A0c65d2b71d6ed8b24c`. Separate test merchant wallet also checked. No key printed. |
+| 2026-10-31 | `npm run deploy:saved:testnet` | PASS; v2 `0x7eDcC1223154413E314DD071d6Fb0E0a42A71A17`, tx `0x041bfd8e7973e45a4d0886bacb00a6802023ec9a1e4f8e1c1af9d939ab0b25a6`, block 16491131; treasury and owner deployer, fee 50 bps, Pro price 5 MUSD. |
+| 2026-10-31 | `npm run verify:check` and `npm run verify:testnet` | PASS; both v1 and v2 locally compiled source matched onchain runtime bytecode. Explorer API accepted both source verifications. |
+| 2026-10-31 | V2 trove draw preview | PASS; projected 1 MUSD draw from the existing 0.04 BTC trove kept collateral ratio above 150%. |
+| 2026-10-31 | Live 1 MUSD v2 trove-funded invoice | PASS; creation tx `0xd1fe929aa3610f3894f63ec1f4d8b3e8cb2cfec7cd346da1bff34640a8b0cefa`; payment tx `0x8b24fbca7a6649b95fe8c3b65cc53289bc56abb2a7a7979a02d4ba900896e3c9`, block 16491268. Invoice Paid with TroveDraw funding, `TroveBorrowed`/`InvoicePaid` events, 0.995 MUSD merchant receipt, 0.005 MUSD treasury fee, zero contract MUSD, nonce advanced, and trove debt increased. The integration-check script's final event read initially failed because its confirmation helper omitted logs; the script was fixed and the receipt/events were independently verified without making a second payment. |
+| 2026-10-31 | Post-deployment `npm test` and `npm run build` | PASS; 17 local tests and Vite production bundle. |
 | 2026-10-23 | Production favicon request via `vercel curl` | PASS; HTTP 200, `image/png`, 544483 bytes, security headers present. Direct local curl was blocked by Avast WebShield, so no direct-browser visual sign-off is claimed. |
 
 ## Decision Log
@@ -151,11 +160,10 @@
 - **Alternatives:** App-only `withdrawMUSD` then pay (kept as the v1 path, three transactions); SettleTag holding troves for users (rejected: custodial).
 - **Risk accepted:** Anyone who sees a payer's signed request before it is used can submit it directly to Mezo (for gas only), leaving the borrowed MUSD in SettleTag and the invoice unpaid; the owner returns it with `returnStrandedMUSD`. Signatures expire after 20 minutes.
 - **Hardening after review:** `receive()` accepting only zero-value calls (Mezo's ActivePool callback); invoice IDs derived from merchant and salt; share links carry the contract address and ambiguous lookups are refused; 90-day invoice cap; treasury cannot be MUSD or SettleTag; merchants counted on first payment by someone else; app blocks draws in Recovery Mode, checks the system ratio, reads Mezo's signing domain before signing, and warns instead of silently falling back to v1.
-- **Status:** Implemented and tested locally; awaiting v2 deployment, explorer verification and a live trove-funded payment.
+- **Status:** V2 deployed; v1/v2 sources verified; one existing-trove draw and invoice settlement proved on Mezo testnet. Public web release with the v2 address remains to be checked. Independent third-party use remains outstanding.
 
 ## Next Action
 
-1. Deploy v2 with `npm run deploy:saved:testnet`, then `npm run verify:testnet` for v1 and v2; commit `src/deployment.json` and redeploy the web app.
-2. Run one live trove-funded payment with two separate wallets; add it to `docs/TESTNET_EVIDENCE.md`.
-3. Run the merchant pilot in `docs/WAVE2.md`; count only merchants and payers outside the team.
-4. Keep the original testnet borrow position open; verify its live state before any repayment or withdrawal.
+1. Publish the v2 deployment record and technical evidence to GitHub; verify the resulting Vercel production build uses v2 and opens the paid v2 invoice.
+2. Arrange independent merchant and payer testing; count only users outside the project wallets.
+3. Keep the original testnet borrow position open; verify its live state before any repayment or withdrawal.

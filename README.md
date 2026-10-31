@@ -4,12 +4,12 @@
 
 SettleTag is a Mezo testnet product. A merchant creates a one-time invoice onchain and shares a link. The payer either pays from wallet MUSD, or signs one Mezo borrowing request and SettleTag draws the MUSD from the payer's own trove (or opens one), settles the merchant, and records a receipt. The contract does not hold funds between transactions.
 
-**Try it:** [Open SettleTag](https://settletag.vercel.app/) · [Inspect a paid 1 MUSD invoice](https://settletag.vercel.app/?invoice=0x7d8aec69ac6d214cde80139bffe33989e6dd58006e561c6942964059e190516f) · [See the payment on Mezo testnet](https://explorer.test.mezo.org/tx/0xf2a79f2a848b643889db43321ca36f268233898de5a4f4c6fc26af814ef162e4)
+**Try it:** [Open SettleTag](https://settletag.vercel.app/) · [Inspect the v2 trove-funded invoice](https://settletag.vercel.app/?invoice=0x509acee3658928085d319f7e03b50d734b0159963b57b961498720521dd830a5&contract=0x7eDcC1223154413E314DD071d6Fb0E0a42A71A17) · [See its Mezo transaction](https://explorer.test.mezo.org/tx/0x8b24fbca7a6649b95fe8c3b65cc53289bc56abb2a7a7979a02d4ba900896e3c9)
 
 ## Status
 
-- **v1 contract** (`0x53eCBb8891Df17927d40E4FbF234a80cB82EC456`): deployed on Mezo testnet; a real 1 MUSD invoice settled onchain ([evidence](docs/TESTNET_EVIDENCE.md)). Its exact source and compiler input are in `verification/`, ready for explorer verification.
-- **v2 contract** (`contracts/SettleTag.sol`): trove-funded settlement, settlement fee and Pro merchant plan. Tested only against local stand-ins for Mezo's contracts (unit tests and a browser end-to-end run). **Not yet deployed or tested against Mezo's real contracts.** The app switches to v2 automatically once `src/deployment.json` holds its address.
+- **v1 contract** (`0x53eCBb8891Df17927d40E4FbF234a80cB82EC456`): deployed, source verified, with a real 1 MUSD wallet-funded settlement ([evidence](docs/TESTNET_EVIDENCE.md)).
+- **v2 contract** (`0x7eDcC1223154413E314DD071d6Fb0E0a42A71A17`): deployed and source verified on Mezo testnet. A 1 MUSD invoice was paid by drawing from an existing Mezo trove in one transaction ([evidence](docs/TESTNET_EVIDENCE.md)). Opening a new trove and paying, trove management, and Pro purchase have only been tested locally.
 - **Web app**: Trove sheet (health, add collateral, repay, open trove) and borrow-to-pay work with either contract. With v1, borrow-to-pay takes three wallet transactions; with v2, one signature and one transaction.
 - Third-party audit: **not performed**. Testnet only; do not use with real funds.
 
@@ -24,7 +24,7 @@ SettleTag is a Mezo testnet product. A merchant creates a one-time invoice oncha
 
 The trove always belongs to the payer. SettleTag only offers borrow-to-pay when the trove would stay at or above 150% collateral and Mezo's system-wide ratio would too; it offers no draws in Recovery Mode, when Mezo refuses them. It reads the signing domain from Mezo before asking for a signature and simulates each transaction before sending it. Addresses and interfaces come from Mezo's own deployment records in [mezo-org/musd](https://github.com/mezo-org/musd/tree/main/solidity/artifacts/deployments/matsnet).
 
-These flows have so far run only against local stand-ins that reproduce Mezo's signature scheme and its zero-value BTC callback to the recipient. The first live trove-funded payment is a pending step ([Wave 2 notes](docs/WAVE2.md)).
+The existing-trove draw and settlement path has also completed one live Mezo testnet payment. The other new flows have been tested against local stand-ins that reproduce Mezo's signature scheme and zero-value BTC callback to the recipient. See the [Wave 2 technical status](docs/WAVE2.md).
 
 ## Business model
 
@@ -36,7 +36,7 @@ These flows have so far run only against local stand-ins that reproduce Mezo's s
 
 Plain transfers carry no invoice reference, and matching by amount fails when two customers send the same sum. SettleTag binds an invoice ID to a merchant, exact amount, deadline and one-time settlement. It also lets a BTC holder pay a MUSD invoice without first acquiring MUSD: they borrow it from their own Mezo trove in the act of paying.
 
-The first intended user is a small merchant or freelancer accepting MUSD, and customers who hold BTC on Mezo. This is a prototype use case; merchant demand has not been validated yet (see [Wave 2 notes](docs/WAVE2.md)).
+The first intended user is a small merchant or freelancer accepting MUSD, and customers who hold BTC on Mezo. This is a prototype use case; independent merchant demand has not been validated yet.
 
 ## Run locally
 
@@ -50,16 +50,16 @@ npm run dev
 
 Browser end-to-end run against a local Mezo simulator: see [test/e2e/README.md](test/e2e/README.md).
 
-## Deploy and verify v2
+## Deploy and verify a contract
 
-These steps sign transactions on Mezo testnet with the project's deployment wallet; run them on the machine that holds it.
+These commands are for a fresh deployment and will spend test BTC gas. V2 is already deployed; do not rerun the deployment command to use the existing address.
 
 ```sh
 npm run deploy:saved:testnet   # deploys v2, writes src/deployment.json
 npm run verify:testnet         # verifies v1 and v2 on explorer.test.mezo.org
 ```
 
-`scripts/verify.js` first recompiles the source and checks it against the code on chain, then submits to the explorer API Mezo's own repositories use (`api.explorer.test.mezo.org`). `npm run verify:check` runs only the bytecode check. Optional deploy settings: `SETTLETAG_TREASURY`, `SETTLETAG_FEE_BPS` (default 50), `SETTLETAG_PRO_PRICE` (default 5 MUSD). Commit the updated `src/deployment.json` and redeploy the web app.
+`scripts/verify.js` first recompiles the source and checks it against the code on chain, then submits to the explorer API Mezo's own repositories use (`api.explorer.test.mezo.org`). `npm run verify:check` runs only the bytecode check. Optional deploy settings: `SETTLETAG_TREASURY`, `SETTLETAG_FEE_BPS` (default 50), `SETTLETAG_PRO_PRICE` (default 5 MUSD). The current v2 address and constructor arguments are in `src/deployment.json`; both versions have been verified on the explorer.
 
 ## Test wallet and faucet
 
