@@ -5,7 +5,7 @@ import { LEGACY_ABI } from './legacy.js';
 import { createTestWallet, unlockTestWallet, savedWalletAddress, encryptedWalletBackup, assertSignerMatches } from './wallet.js';
 import {
   MEZO, ONE, TROVE_STATUS, mezoContracts, readTrove, insertHints, projectDraw, projectOpen, minimumOpenBorrow,
-  collateralFor, withdrawMUSDTypedData, openTroveTypedData, percent, money
+  collateralFor, withdrawMUSDTypedData, openTroveTypedData, readSignatureDomain, percent, money
 } from './mezo.js';
 import './style.css';
 
@@ -23,6 +23,7 @@ const $ = (id) => document.getElementById(id);
 // No read cache: back-to-back transactions (approve, then pay) must each fetch a fresh nonce.
 const rpc = new ethers.JsonRpcProvider(RPC, undefined, { cacheTimeout: -1 });
 let signer, address, invoice, transfer, browserWallet = false, watchedProvider, borrowPlan, v2 = null;
+let linkContract = null; // contract named in a shared invoice link
 
 // --- SettleTag contract versions ---
 // v2 adds trove-funded settlement and fees. Until its address is configured, the app writes to v1.
@@ -31,9 +32,14 @@ const ready = (async () => {
   try {
     const c = new ethers.Contract(CONFIGURED, settleTag.abi, rpc);
     const [token, signatures] = await Promise.all([c.musd(), c.borrowerOperationsSignatures()]);
-    if (token.toLowerCase() !== MUSD.toLowerCase() || signatures.toLowerCase() !== MEZO.borrowerOperationsSignatures.toLowerCase()) return null;
+    if (token.toLowerCase() !== MUSD.toLowerCase() || signatures.toLowerCase() !== MEZO.borrowerOperationsSignatures.toLowerCase()) throw new Error('unexpected wiring');
     return ethers.getAddress(CONFIGURED);
-  } catch { return null; }
+  } catch {
+    const note = $('config-note');
+    note.textContent = `SettleTag v2 at ${CONFIGURED} could not be confirmed on Mezo testnet, so this page is using the v1 contract. Reload to try again.`;
+    note.hidden = false;
+    return null;
+  }
 })().then(found => { v2 = found; applyMode(); return found; });
 
 const writeTarget = () => v2 ? { address: v2, abi: settleTag.abi, version: 2 } : { address: LEGACY, abi: LEGACY_ABI, version: 1 };
@@ -117,9 +123,9 @@ function applyMode() {
   const target = writeTarget();
   const note = document.querySelector('.build-note span');
   note.textContent = v2
-    ? 'SettleTag v2 is live on Mezo testnet. Invoices settle from wallet MUSD or from MUSD borrowed against the payer’s BTC trove, in one transaction.'
+    ? 'SettleTag v2 on Mezo testnet: pay an invoice from wallet MUSD, or borrow the MUSD against BTC through your Mezo trove.'
     : 'SettleTag is live on Mezo testnet. A 1 MUSD invoice settled directly from payer to merchant, with an onchain receipt.';
-  document.querySelector('.ribbon-note small').textContent = v2 ? 'Trove-funded settlement live' : 'Live MUSD settlement verified';
+  document.querySelector('.ribbon-note small').textContent = v2 ? 'Trove-funded settlement' : 'Live MUSD settlement verified';
   let link = document.querySelector('.build-note a');
   if (!link) { link = document.createElement('a'); link.target = '_blank'; link.rel = 'noreferrer'; document.querySelector('.build-note').append(link); }
   link.href = `${EXPLORER}/address/${target.address}`; link.textContent = 'View contract ↗';
@@ -255,13 +261,20 @@ async function lookup() {
   await ready;
   const id = $('invoice-id').value.trim();
   if (!ethers.isHexString(id, 32)) throw new Error('Enter a 32-byte invoice reference beginning with 0x.');
-  let found;
-  for (const target of lookupTargets()) {
-    const data = await settle(target).invoices(id);
-    if (data.status !== 0n) { found = { target, data }; break; }
+  let targets = lookupTargets();
+  if (linkContract) {
+    targets = targets.filter(t => t.address.toLowerCase() === linkContract.toLowerCase());
+    if (!targets.length) throw new Error('The invoice link names a contract this app does not recognise. Ask the merchant for a new link.');
   }
-  if (!found) throw new Error('Invoice not found on SettleTag contracts.');
-  const { target, data } = found;
+  const found = [];
+  for (const target of targets) {
+    const data = await settle(target).invoices(id);
+    if (data.status !== 0n) found.push({ target, data });
+  }
+  if (!found.length) throw new Error('Invoice not found on SettleTag contracts.');
+  // Only v1 accepts arbitrary IDs, so a v1 invoice could copy a v2 ID. Never guess which one is meant.
+  if (found.length > 1) throw new Error('This reference exists on both SettleTag contracts. Open the merchant’s invoice link, which names the contract.');
+  const { target, data } = found[0];
   const feeBps = target.version === 2 ? data.feeBps : 0n;
   const fee = data.amount * feeBps / 10_000n;
   invoice = { id, target, merchant: data.merchant, amount: data.amount, deadline: data.deadline, status: data.status, payer: data.payer, feeBps, fee, funding: target.version === 2 ? Number(data.funding) : 0 };
@@ -311,14 +324,19 @@ $('create-form').addEventListener('submit', async e => {
     const amount = parseUnits($('amount').value, 'MUSD');
     if (amount > 2n ** 128n - 1n) throw new Error('Amount is too large.');
     const deadline = BigInt(Math.floor(Date.now() / 1000) + Number($('expiry').value) * 86400);
-    const id = ethers.hexlify(ethers.randomBytes(32));
-    const tx = await settle(writeTarget(), signer).createInvoice(id, amount, deadline);
+    const target = writeTarget();
+    // v2 derives the invoice ID from the merchant and a random salt; v1 takes the random value as the ID.
+    const salt = ethers.hexlify(ethers.randomBytes(32));
+    const id = target.version === 2 ? ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address', 'bytes32'], [address, salt])) : salt;
+    const tx = await settle(target, signer).createInvoice(salt, amount, deadline);
     await confirm(tx, 'Waiting for invoice confirmation…');
-    const link = new URL(location.href); link.search = ''; link.searchParams.set('invoice', id);
-    $('share-link').value = link.href; $('created').hidden = false; $('invoice-id').value = id;
+    const link = new URL(location.href); link.search = '';
+    link.searchParams.set('invoice', id); link.searchParams.set('contract', target.address);
+    $('share-link').value = link.href; $('created').hidden = false; $('invoice-id').value = id; linkContract = target.address;
     await lookup(); notice('Invoice created onchain.', tx.hash);
   } catch (error) { notice(err(error)); } finally { btn.disabled = false; }
 });
+$('invoice-id').addEventListener('input', () => { linkContract = null; });
 $('lookup').addEventListener('click', () => lookup().then(() => notice('Invoice loaded from Mezo testnet.')).catch(e => { $('invoice-details').hidden = true; notice(err(e)); }));
 async function approveIfNeeded(spender, amount) {
   const token = new ethers.Contract(MUSD, tokenAbi, signer);
@@ -349,16 +367,17 @@ async function buildBorrowPlan() {
   const trove = await readTrove(rpc, address);
   const amount = invoice.amount;
   if (trove.active) {
-    const plan = projectDraw({ coll: trove.coll, debt: trove.debt, price: trove.price, borrowingRate: trove.borrowingRate, amount, capacity: trove.capacity, recoveryMode: trove.recoveryMode });
+    const plan = projectDraw({ coll: trove.coll, debt: trove.debt, price: trove.price, borrowingRate: trove.borrowingRate, amount, capacity: trove.capacity, recoveryMode: trove.recoveryMode, systemColl: trove.systemColl, systemDebt: trove.systemDebt });
     return { kind: 'draw', trove, amount, ...plan };
   }
-  const debtAmount = amount > minimumOpenBorrow(trove.minNetDebt, trove.borrowingRate) ? amount : minimumOpenBorrow(trove.minNetDebt, trove.borrowingRate);
+  const minimum = minimumOpenBorrow(trove.minNetDebt, trove.effectiveRate);
+  const debtAmount = amount > minimum ? amount : minimum;
   const raw = $('borrow-collateral').value.trim();
-  const fee = trove.recoveryMode ? 0n : debtAmount * trove.borrowingRate / ONE;
+  const fee = debtAmount * trove.effectiveRate / ONE;
   const suggested = collateralFor(debtAmount + fee + trove.gasCompensation, trove.price, 2n * ONE);
   if (!raw) $('borrow-collateral').value = ethers.formatEther(suggested);
   const collateral = parseUnits($('borrow-collateral').value, 'BTC collateral');
-  const plan = projectOpen({ collateral, debtAmount, price: trove.price, borrowingRate: trove.borrowingRate, gasCompensation: trove.gasCompensation, minNetDebt: trove.minNetDebt, recoveryMode: trove.recoveryMode });
+  const plan = projectOpen({ collateral, debtAmount, price: trove.price, borrowingRate: trove.borrowingRate, gasCompensation: trove.gasCompensation, minNetDebt: trove.minNetDebt, recoveryMode: trove.recoveryMode, systemColl: trove.systemColl, systemDebt: trove.systemDebt });
   const btcBalance = await rpc.getBalance(address);
   if (btcBalance < collateral + ethers.parseEther('0.0005')) plan.problems.push(`This wallet has ${btc(btcBalance)}; keep some BTC for network fees after locking collateral.`);
   plan.ok = plan.problems.length === 0;
@@ -381,7 +400,7 @@ function renderBorrowPlan(plan) {
   } else {
     rows($('borrow-summary'), [
       ['No active trove', 'A new one will be opened'],
-      ['Borrow (Mezo minimum applies)', musd(plan.debtAmount)],
+      ['Borrow (Mezo’s current minimum applies)', musd(plan.debtAmount)],
       ['To merchant via invoice', musd(plan.amount)],
       ['Returned to your wallet', musd(plan.debtAmount - plan.amount)],
       ['Fee + gas reserve', `${musd(plan.fee)} + ${musd(trove.gasCompensation)}`],
@@ -405,7 +424,8 @@ async function checkBorrow() {
 }
 $('borrow-check').addEventListener('click', checkBorrow);
 $('borrow-collateral').addEventListener('change', () => { if (borrowPlan?.kind === 'open') checkBorrow(); });
-async function signMezo(typed) {
+async function signMezo(build) {
+  const typed = build(await readSignatureDomain(rpc));
   notice('Review the Mezo borrowing request in your wallet. It names SettleTag as the recipient of the borrowed MUSD.');
   return signer.signTypedData(typed.domain, typed.types, typed.value);
 }
@@ -423,7 +443,7 @@ $('borrow-pay').addEventListener('click', async () => {
       if (atomic) {
         const deadline = nowSeconds() + BigInt(SIGNATURE_WINDOW);
         const nonce = await mezoContracts(rpc).signatures.getNonce(address);
-        const signature = await signMezo(withdrawMUSDTypedData({ amount: plan.amount, borrower: address, recipient: invoice.target.address, nonce, deadline }));
+        const signature = await signMezo(domain => withdrawMUSDTypedData({ domain, amount: plan.amount, borrower: address, recipient: invoice.target.address, nonce, deadline }));
         await readySigner();
         const c = settle(invoice.target, signer);
         await c.payWithTroveDraw.staticCall(invoice.id, hints.upper, hints.lower, signature, deadline);
@@ -437,7 +457,7 @@ $('borrow-pay').addEventListener('click', async () => {
       if (atomic) {
         const deadline = nowSeconds() + BigInt(SIGNATURE_WINDOW);
         const nonce = await mezoContracts(rpc).signatures.getNonce(address);
-        const signature = await signMezo(openTroveTypedData({ assetAmount: plan.collateral, debtAmount: plan.debtAmount, borrower: address, recipient: invoice.target.address, nonce, deadline }));
+        const signature = await signMezo(domain => openTroveTypedData({ domain, assetAmount: plan.collateral, debtAmount: plan.debtAmount, borrower: address, recipient: invoice.target.address, nonce, deadline }));
         await readySigner();
         const c = settle(invoice.target, signer);
         const args = [invoice.id, plan.debtAmount, hints.upper, hints.lower, signature, deadline, { value: plan.collateral }];
@@ -516,7 +536,7 @@ async function refreshTrove() {
   const own = address && owner.toLowerCase() === address.toLowerCase();
   $('trove-manage').hidden = !(t.active && own);
   $('trove-open').hidden = t.active || !own;
-  if (!$('trove-open').hidden && !$('open-debt').value) { $('open-debt').value = ethers.formatUnits(minimumOpenBorrow(t.minNetDebt, t.borrowingRate), 18); previewOpen(); }
+  if (!$('trove-open').hidden && !$('open-debt').value) { $('open-debt').value = ethers.formatUnits(minimumOpenBorrow(t.minNetDebt, t.effectiveRate), 18); previewOpen(); }
   return t;
 }
 $('trove-refresh').addEventListener('click', () => refreshTrove().then(t => notice(t.active ? `Trove read from Mezo: ${t.health.label.toLowerCase()} at ${percent(t.icr)}.` : 'No active trove for this address.')).catch(e => notice(err(e))));
@@ -529,7 +549,7 @@ function previewOpen() {
     const collateral = parseUnits($('open-coll').value || '0.000000000000000001', 'BTC');
     const debtAmount = parseUnits($('open-debt').value, 'MUSD');
     const t = troveView;
-    const plan = projectOpen({ collateral, debtAmount, price: t.price, borrowingRate: t.borrowingRate, gasCompensation: t.gasCompensation, minNetDebt: t.minNetDebt, recoveryMode: t.recoveryMode });
+    const plan = projectOpen({ collateral, debtAmount, price: t.price, borrowingRate: t.borrowingRate, gasCompensation: t.gasCompensation, minNetDebt: t.minNetDebt, recoveryMode: t.recoveryMode, systemColl: t.systemColl, systemDebt: t.systemDebt });
     if (!$('open-coll').value) $('open-coll').placeholder = ethers.formatEther(collateralFor(plan.totalDebt, t.price, 2n * ONE));
     rows($('open-summary'), [
       ['Borrowing fee', musd(plan.fee)], ['Gas reserve', musd(t.gasCompensation)], ['Total debt', musd(plan.totalDebt)],
@@ -584,7 +604,8 @@ $('repay-btn').addEventListener('click', async () => {
     if (amount > max) throw new Error(`Mezo keeps a minimum net debt of ${musd(troveView.minNetDebt)}. You can repay up to ${musd(max > 0n ? max : 0n)} without closing the trove.`);
     const balance = await new ethers.Contract(MUSD, tokenAbi, rpc).balanceOf(address);
     if (balance < amount) throw new Error(`This wallet has ${musd(balance)}.`);
-    const principalAfter = troveView.principal > amount ? troveView.principal - amount : 1n;
+    const toPrincipal = amount > troveView.interest ? amount - troveView.interest : 0n; // Mezo pays interest first
+    const principalAfter = troveView.principal > toPrincipal ? troveView.principal - toPrincipal : 1n;
     const hints = await insertHints(rpc, troveView.coll, principalAfter);
     const bo = mezoContracts(signer).borrowerOperations;
     await bo.repayMUSD.staticCall(amount, hints.upper, hints.lower);
@@ -614,6 +635,8 @@ async function loadLedger() {
   } catch { /* the ledger is informational; keep the last values */ }
 }
 
-const shared = new URLSearchParams(location.search).get('invoice');
+const params = new URLSearchParams(location.search);
+const shared = params.get('invoice');
+if (ethers.isAddress(params.get('contract') ?? '')) linkContract = ethers.getAddress(params.get('contract'));
 if (shared) { view('invoices'); $('invoice-id').value = shared; lookup().catch(e => notice(err(e))); }
 else view('overview');

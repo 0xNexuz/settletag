@@ -57,6 +57,9 @@ contract MezoSimCore {
         require(t.coll * PRICE / (t.debt + change) >= MCR, "BorrowerOps: An operation that would result in ICR < MCR is not permitted");
         t.debt += change; totalDebt += change;
         ISimToken(MUSD).mint(recipient, amount);
+        // Mezo's ActivePool sends the (zero) collateral change to the recipient after a draw.
+        (bool sent, ) = recipient.call{value: 0}("");
+        require(sent, "Sending BTC failed");
     }
     function simAddColl(address b, uint256 amount) external {
         require(troves[b].status == 1, "BorrowerOps: Trove does not exist or is closed");
@@ -79,6 +82,8 @@ contract MezoSimBorrowerOperations {
     function repayMUSD(uint256 amount, address, address) external { MezoSimCore(CORE).simRepay(msg.sender, amount); }
     function withdrawMUSD(uint256 amount, address, address) external { MezoSimCore(CORE).simDraw(msg.sender, msg.sender, amount); }
     function borrowingRate() external pure returns (uint256) { return RATE; }
+    function getEntireSystemColl() external view returns (uint256) { return MezoSimCore(CORE).totalColl(); }
+    function getEntireSystemDebt() external view returns (uint256) { return MezoSimCore(CORE).totalDebt(); }
     function minNetDebt() external pure returns (uint256) { return MIN_NET_DEBT; }
     function getBorrowingFee(uint256 d) external pure returns (uint256) { return d * RATE / 1e18; }
 }
@@ -92,6 +97,9 @@ contract MezoSimSignatures {
 
     function getNonce(address user) external view returns (uint256) { return nonces[user]; }
     function borrowerOperations() external pure returns (address) { return 0xCdF7028ceAB81fA0C6971208e83fa7872994beE5; }
+    function eip712Domain() external view returns (bytes1, string memory, string memory, uint256, address, bytes32, uint256[] memory) {
+        return (hex"0f", "BorrowerOperationsSignatures", "1", block.chainid, address(this), bytes32(0), new uint256[](0));
+    }
     function openTroveWithSignature(uint256 debtAmount, address, address, address borrower, address recipient, bytes memory signature, uint256 deadline) external payable {
         _verify(OPEN_TROVE_TYPEHASH, abi.encode(msg.value, debtAmount, borrower, recipient), borrower, signature, deadline);
         MezoSimCore(CORE).simOpen(borrower, recipient, msg.value, debtAmount);

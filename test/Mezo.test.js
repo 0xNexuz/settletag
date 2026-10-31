@@ -17,7 +17,7 @@ test('collateral ratio and liquidation price follow Mezo’s 110% line', () => {
   assert.equal(healthLabel(icr).label, 'Watch');
   assert.equal(healthLabel(u('2.5')).tone, 'good');
   assert.equal(healthLabel(u('1.4')).label, 'At risk');
-  assert.equal(healthLabel(u('1.4'), true).label, 'Liquidatable', 'Recovery Mode liquidates below 150%');
+  assert.equal(healthLabel(u('1.12')).label, 'At risk', 'Mezo liquidates only below 110%, in any mode');
   assert.equal(healthLabel(u('1.05')).label, 'Liquidatable');
 });
 
@@ -33,7 +33,13 @@ test('borrow-to-pay is refused below 150% or above Mezo borrowing capacity', () 
   const capped = projectDraw({ ...base, capacity: u('2010'), amount: u('20') });
   assert.equal(capped.ok, false);
   assert.match(capped.problems.join(' '), /capacity/);
-  assert.equal(projectDraw({ ...base, amount: u('40'), recoveryMode: true }).fee, 0n, 'no borrowing fee in Recovery Mode');
+  const recovery = projectDraw({ ...base, amount: u('40'), recoveryMode: true });
+  assert.equal(recovery.fee, 0n, 'no borrowing fee in Recovery Mode');
+  assert.equal(recovery.ok, false, 'Mezo rejects a plain draw in Recovery Mode');
+  const systemTight = projectDraw({ ...base, amount: u('40'), systemColl: u('1'), systemDebt: u('66650') });
+  assert.equal(systemTight.ok, false, 'system ratio would drop below 150%');
+  assert.match(systemTight.problems.join(' '), /whole system/);
+  assert.equal(projectDraw({ ...base, amount: u('40'), systemColl: u('10'), systemDebt: u('100000') }).ok, true);
 });
 
 test('opening a trove meets the minimum net debt and suggests enough collateral', () => {
@@ -41,6 +47,7 @@ test('opening a trove meets the minimum net debt and suggests enough collateral'
   const borrow = minimumOpenBorrow(minNetDebt, rate);
   assert.ok(borrow + borrowingFee(borrow, rate) >= minNetDebt);
   assert.ok(borrow - 1n + borrowingFee(borrow - 1n, rate) < minNetDebt, 'smallest such amount');
+  assert.equal(minimumOpenBorrow(minNetDebt, 0n), minNetDebt, 'no fee in Recovery Mode');
   const totalDebt = borrow + borrowingFee(borrow, rate) + u('200');
   const collateral = collateralFor(totalDebt, price, 2n * 10n ** 18n);
   const plan = projectOpen({ collateral, debtAmount: borrow, price, borrowingRate: rate, gasCompensation: u('200'), minNetDebt });

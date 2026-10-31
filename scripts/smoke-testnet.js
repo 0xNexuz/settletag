@@ -12,11 +12,12 @@ if (await provider.getCode(address) === '0x') throw new Error('SettleTag contrac
 const contract = new ethers.Contract(address, settleTag.abi, loadLocalTestWallet().connect(provider));
 const musd = await contract.musd();
 if (musd.toLowerCase() !== '0x118917a40faf1cd7a13db0ef56c86de7973ac503') throw new Error('Unexpected MUSD token.');
-const id = ethers.hexlify(ethers.randomBytes(32));
+const salt = ethers.hexlify(ethers.randomBytes(32));
+const id = await contract.invoiceId(await contract.runner.getAddress(), salt);
 const amount = ethers.parseUnits('1', 18);
 const latest = await provider.getBlock('latest');
 const deadline = BigInt(latest.timestamp + 7 * 24 * 60 * 60);
-const tx = await contract.createInvoice(id, amount, deadline);
+const tx = await contract.createInvoice(salt, amount, deadline);
 const receipt = await tx.wait();
 if (receipt.status !== 1) throw new Error('Invoice creation reverted.');
 const invoice = await contract.invoices(id);

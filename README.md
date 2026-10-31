@@ -2,14 +2,14 @@
 
 **MUSD invoices on Mezo that a payer can settle from their wallet, or by borrowing the MUSD against their BTC in the same transaction.**
 
-SettleTag is a Mezo testnet product. A merchant creates a one-time invoice onchain and shares a link. The payer either pays from wallet MUSD, or signs one Mezo borrowing request and SettleTag draws the MUSD from the payer's own trove (or opens one), settles the merchant, and records a receipt. The contract never keeps funds.
+SettleTag is a Mezo testnet product. A merchant creates a one-time invoice onchain and shares a link. The payer either pays from wallet MUSD, or signs one Mezo borrowing request and SettleTag draws the MUSD from the payer's own trove (or opens one), settles the merchant, and records a receipt. The contract does not hold funds between transactions.
 
 **Try it:** [Open SettleTag](https://settletag.vercel.app/) · [Inspect a paid 1 MUSD invoice](https://settletag.vercel.app/?invoice=0x7d8aec69ac6d214cde80139bffe33989e6dd58006e561c6942964059e190516f) · [See the payment on Mezo testnet](https://explorer.test.mezo.org/tx/0xf2a79f2a848b643889db43321ca36f268233898de5a4f4c6fc26af814ef162e4)
 
 ## Status
 
 - **v1 contract** (`0x53eCBb8891Df17927d40E4FbF234a80cB82EC456`): deployed on Mezo testnet; a real 1 MUSD invoice settled onchain ([evidence](docs/TESTNET_EVIDENCE.md)). Its exact source and compiler input are in `verification/`, ready for explorer verification.
-- **v2 contract** (`contracts/SettleTag.sol`): trove-funded settlement, settlement fee and Pro merchant plan. Passes local tests against a Mezo signature mock and a browser end-to-end run against a local Mezo simulator. **Not yet deployed to Mezo testnet.** The app switches to v2 automatically once `src/deployment.json` holds its address.
+- **v2 contract** (`contracts/SettleTag.sol`): trove-funded settlement, settlement fee and Pro merchant plan. Tested only against local stand-ins for Mezo's contracts (unit tests and a browser end-to-end run). **Not yet deployed or tested against Mezo's real contracts.** The app switches to v2 automatically once `src/deployment.json` holds its address.
 - **Web app**: Trove sheet (health, add collateral, repay, open trove) and borrow-to-pay work with either contract. With v1, borrow-to-pay takes three wallet transactions; with v2, one signature and one transaction.
 - Third-party audit: **not performed**. Testnet only; do not use with real funds.
 
@@ -18,17 +18,19 @@ SettleTag is a Mezo testnet product. A merchant creates a one-time invoice oncha
 | Flow | Mezo contract | What happens |
 |---|---|---|
 | Pay by drawing from an existing trove | `BorrowerOperationsSignatures.withdrawMUSDWithSignature` | The payer signs an EIP-712 `WithdrawMUSD` request naming SettleTag as recipient. `payWithTroveDraw` submits it, receives exactly the invoice amount, pays the merchant and the fee, and marks the invoice paid, atomically. |
-| Pay by opening a trove | `BorrowerOperationsSignatures.openTroveWithSignature` | The payer attaches BTC collateral and signs an `OpenTrove` request. `payByOpeningTrove` opens the trove, settles the invoice, and returns the rest of the loan (Mezo's minimum is 1,800 MUSD) to the payer. |
+| Pay by opening a trove | `BorrowerOperationsSignatures.openTroveWithSignature` | The payer attaches BTC collateral and signs an `OpenTrove` request. `payByOpeningTrove` opens the trove, settles the invoice, and returns the rest of the loan (Mezo's minimum is currently 1,800 MUSD) to the payer. |
 | Trove health | `TroveManager`, `PriceFeed`, `BorrowerOperations` | Live collateral ratio, liquidation price, debt, borrowing capacity, interest rate, system TCR and Recovery Mode. |
 | Manage the trove | `BorrowerOperations.addColl`, `repayMUSD`, `openTrove` | Payers strengthen their trove; merchants repay debt with MUSD that invoices bring in. |
 
-The trove always belongs to the payer. SettleTag only offers borrow-to-pay when the trove would stay at or above 150% collateral, the level Mezo itself enforces in Recovery Mode, and it simulates every Mezo call before asking for a signature. Addresses come from Mezo's own deployment records in [mezo-org/musd](https://github.com/mezo-org/musd/tree/main/solidity/artifacts/deployments/matsnet).
+The trove always belongs to the payer. SettleTag only offers borrow-to-pay when the trove would stay at or above 150% collateral and Mezo's system-wide ratio would too; it offers no draws in Recovery Mode, when Mezo refuses them. It reads the signing domain from Mezo before asking for a signature and simulates each transaction before sending it. Addresses and interfaces come from Mezo's own deployment records in [mezo-org/musd](https://github.com/mezo-org/musd/tree/main/solidity/artifacts/deployments/matsnet).
+
+These flows have so far run only against local stand-ins that reproduce Mezo's signature scheme and its zero-value BTC callback to the recipient. The first live trove-funded payment is a pending step ([Wave 2 notes](docs/WAVE2.md)).
 
 ## Business model
 
 - **Settlement fee:** 0.5% of each invoice, deducted from what the merchant receives and sent to the SettleTag treasury. The rate is fixed on the invoice when it is created and capped in the contract at 1%.
 - **SettleTag Pro:** merchants pay 5 MUSD per 30 days (stackable, up to 12 periods) for 0% fees on invoices created during the plan. Pro pays for itself above 1,000 MUSD of monthly invoicing.
-- The contract tracks invoices, settled volume, trove-funded volume, fee and plan revenue, and distinct merchants and payers. The Overview sheet shows these live, so adoption claims can be checked onchain.
+- The contract tracks invoices, settled volume, trove-funded volume, fee and plan revenue, and distinct merchants and payers (a merchant counts once someone else pays them). The Overview sheet shows these live. They can be inflated with throwaway wallets, so adoption evidence should rest on explorer links to individual invoices.
 
 ## Why this product
 
@@ -74,5 +76,6 @@ The project's separate deployment wallet is `0x7FF7007f9330E140fC6d7A0c65d2b71d6
 ## Limits
 
 - Unaudited and testnet only. No tax, fiat value, refunds or disputes.
-- If someone submits a payer's signed Mezo request straight to Mezo instead of through SettleTag, the borrowed MUSD lands in the SettleTag contract and the payment does not complete. The payer keeps the debt; the owner can return that MUSD with `returnStrandedMUSD`. Signatures expire after 20 minutes.
+- Invoice IDs in v2 are derived from the merchant and a random salt, and share links name the contract, so a copied ID on another contract cannot redirect a payer. Invoices expire within 90 days.
+- Anyone who sees a payer's signed Mezo request before it is used can submit it straight to Mezo instead of through SettleTag. The borrowed MUSD then lands in the SettleTag contract and the payment does not complete; the payer keeps the debt, and the owner can return that MUSD with `returnStrandedMUSD`. Signatures expire after 20 minutes.
 - Fees and the Pro plan are owner-configurable within the contract's caps.

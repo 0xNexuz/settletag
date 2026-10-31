@@ -43,9 +43,9 @@ async function setup() {
   };
   const balance = async (who) => token.balanceOf(typeof who === 'string' ? who : await who.getAddress());
   const create = async (amount, signer = merchant) => {
-    const id = randomId();
-    await (await invoices.connect(signer).createInvoice(id, amount, (await now()) + 3600n)).wait();
-    return id;
+    const salt = randomId();
+    await (await invoices.connect(signer).createInvoice(salt, amount, (await now()) + 3600n)).wait();
+    return invoices.invoiceId(await signer.getAddress(), salt);
   };
   const sign = async (wallet, typed) => wallet.signTypedData(typed.domain, typed.types, typed.value);
   const drawSignature = async (wallet, { amount, recipient, deadline }) => sign(wallet, withdrawMUSDTypedData({
@@ -87,16 +87,35 @@ test('wallet payment splits the 0.5% fee and records the payer once', async () =
   assert.deepEqual([stats.invoices_, stats.paid, stats.volume, stats.fees, stats.merchants, stats.payers], [1n, 1n, amount, units('1'), 1n, 1n]);
 });
 
+test('merchants count once paid, not when they create invoices', async () => {
+  const { other, invoices, create } = await setup();
+  await create(units('1'), other);
+  assert.equal((await invoices.stats()).merchants, 0n);
+});
+
+test('accepts Mezo’s zero-value collateral callback but rejects BTC', async () => {
+  const { payer, invoices, token } = await setup();
+  const to = await invoices.getAddress();
+  await (await payer.sendTransaction({ to, value: 0n })).wait();
+  await assert.rejects(payer.sendTransaction({ to, value: 1n }));
+  await assert.rejects(invoices.setTreasury(await token.getAddress()), 'treasury cannot be the MUSD token');
+  await assert.rejects(invoices.setTreasury(to), 'treasury cannot be SettleTag');
+});
+
 test('rejects missing, duplicate, cancelled, expired, unfunded and self-paid invoices', async () => {
   const { merchant, payer, other, token, invoices, now, advance, create } = await setup();
   const deadline = (await now()) + 3600n;
-  await assert.rejects(invoices.connect(merchant).createInvoice(ethers.ZeroHash, 1n, deadline));
   await assert.rejects(invoices.connect(merchant).createInvoice(randomId(), 0n, deadline));
   await assert.rejects(invoices.connect(merchant).createInvoice(randomId(), 1n, await now()));
-  const id = randomId();
+  await assert.rejects(invoices.connect(merchant).createInvoice(randomId(), 1n, (await now()) + 91n * 86400n), 'deadline over 90 days');
+  const salt = randomId();
+  const id = await invoices.invoiceId(await merchant.getAddress(), salt);
+  assert.equal(id, ethers.keccak256(ethers.AbiCoder.defaultAbiCoder().encode(['address', 'bytes32'], [await merchant.getAddress(), salt])), 'ID matches the app’s derivation');
   await assert.rejects(invoices.connect(payer).payInvoice(id));
-  await (await invoices.connect(merchant).createInvoice(id, 1000n, deadline)).wait();
-  await assert.rejects(invoices.connect(merchant).createInvoice(id, 1000n, deadline));
+  await (await invoices.connect(merchant).createInvoice(salt, 1000n, deadline)).wait();
+  await assert.rejects(invoices.connect(merchant).createInvoice(salt, 1000n, deadline), 'duplicate salt');
+  await (await invoices.connect(other).createInvoice(salt, 1000n, deadline)).wait();
+  assert.equal((await invoices.invoices(id)).merchant, await merchant.getAddress(), 'same salt from another account cannot claim this ID');
   await assert.rejects(invoices.connect(other).cancelInvoice(id));
   await assert.rejects(invoices.connect(payer).payInvoice(id), 'payer has no MUSD');
   assert.equal((await invoices.invoices(id)).status, 1n, 'failed transfer rolls status back');
