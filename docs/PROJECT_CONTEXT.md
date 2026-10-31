@@ -14,7 +14,7 @@
 - **Branch:** `master` (local repository).
 - **HEAD:** Local live-testnet milestone committed; check `git log -1` for the current hash.
 - **Working tree:** Recheck on continuation. Local secrets and `.env.local` are ignored.
-- **Remote:** Public GitHub repository `https://github.com/0xNexuz/settletag`; `master` pushed at commit `afa9336` for the logo and funding release.
+- **Remote:** Public GitHub repository `https://github.com/0xNexuz/settletag`; `master` at `b3a9bc7` (Wave 2 work), also on branch `wave2-mezo-native`.
 - **Web:** Vercel project `xreyys-projects/settletag`; production alias `https://settletag.vercel.app`, deployment `dpl_HfkV5EC8uccz5pQVPjoZLZGYcKHH` Ready at release check.
 - **Last verified milestone:** Public Vercel build succeeded. The production alias returned HTTP 200 with the app HTML, JS, CSS, and pixel artwork; the bundle contains the deployed contract and MUSD addresses. The Mezo RPC returned chain ID 31611 and `Access-Control-Allow-Origin: *` for the production origin. The public paid-invoice URL subsequently loaded in the in-app browser and showed Paid, 1.0 MUSD, and the expected merchant and payer. Wallet and Faucet navigation also worked. Invoice and wallet screens were visually checked at 390 px width with no horizontal page overflow. New merchant signing flow remains unverified.
 
@@ -106,6 +106,7 @@
 | 2026-10-31 | Regression check for the zero-value callback | With the mock now making Mezo's callback, the trove-draw tests fail without `receive()` and pass with it. |
 | 2026-10-31 | `npm test` after review fixes | PASS; 17 tests (10 contract, 4 Mezo helpers, 3 wallet). |
 | 2026-10-31 | Browser end-to-end after review fixes | PASS; 29/29 checks, adding contract-named share links and refusal of an ID copied onto v1. The simulator now makes the zero-value callback and serves `eip712Domain`. |
+| 2026-10-31 | GitHub push and Vercel production build | PASS; `master` advanced from `739de6f` to `b3a9bc7`; Vercel git deployment `dpl_HraNR6fW9XXtHQvWh5u8yZdBNrdv` Ready and aliased to `settletag.vercel.app`. The site runs in v1 mode (no v2 address recorded). The new Trove and borrow-to-pay flows were not exercised against live Mezo. |
 | 2026-10-31 | `scripts/deploy.js` and `scripts/verify.js --dry-run` on the local simulator | PASS; deployment record written and restored; recompiled v1 and v2 matched on-chain runtime bytecode with immutables masked. Explorer submission not run: Mezo hosts are unreachable from the build environment. |
 | 2026-10-23 | Production favicon request via `vercel curl` | PASS; HTTP 200, `image/png`, 544483 bytes, security headers present. Direct local curl was blocked by Avast WebShield, so no direct-browser visual sign-off is claimed. |
 
