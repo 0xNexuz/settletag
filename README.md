@@ -6,6 +6,17 @@ SettleTag is a Mezo testnet product. A merchant creates a one-time invoice oncha
 
 **Try it:** [Open SettleTag](https://settletag.vercel.app/) · [Inspect the v2 trove-funded invoice](https://settletag.vercel.app/?invoice=0x509acee3658928085d319f7e03b50d734b0159963b57b961498720521dd830a5&contract=0x7eDcC1223154413E314DD071d6Fb0E0a42A71A17) · [See its Mezo transaction](https://explorer.test.mezo.org/tx/0x8b24fbca7a6649b95fe8c3b65cc53289bc56abb2a7a7979a02d4ba900896e3c9)
 
+## What changed from Wave 1 to Wave 2
+
+| | Wave 1: v1 | Wave 2: v2 |
+|---|---|---|
+| **Pay an invoice** | Pay with MUSD already in the wallet through ERC-20 approval and `transferFrom`. Borrowing first requires separate wallet transactions. | Sign a Mezo borrowing request; `payWithTroveDraw` draws from the payer's existing trove and settles the invoice in one transaction. `payByOpeningTrove` supports opening a trove while paying. |
+| **Mezo integration in the app** | MUSD transfer and onchain receipt. | Mezo `BorrowerOperationsSignatures`, live trove health, borrowing capacity, Recovery Mode checks, and collateral and repayment controls. |
+| **Merchant economics** | No settlement fee or paid plan. | 0.5% settlement fee, or 5 MUSD for 30 days of SettleTag Pro with 0% fees on new invoices. |
+| **Live proof** | A wallet-funded 1 MUSD invoice settled on Mezo testnet. | A separate project test wallet created a 1 MUSD invoice; the payer settled it with a draw from an existing trove. The merchant received 0.995 MUSD and the treasury 0.005 MUSD in the same [transaction](https://explorer.test.mezo.org/tx/0x8b24fbca7a6649b95fe8c3b65cc53289bc56abb2a7a7979a02d4ba900896e3c9). |
+
+Opening a new trove while paying, trove management transactions, and Pro purchase have been tested locally, not yet in a live testnet payment. Independent merchant and payer use has not been verified.
+
 ## Status
 
 - **v1 contract** (`0x53eCBb8891Df17927d40E4FbF234a80cB82EC456`): deployed, source verified, with a real 1 MUSD wallet-funded settlement ([evidence](docs/TESTNET_EVIDENCE.md)).
