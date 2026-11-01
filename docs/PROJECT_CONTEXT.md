@@ -5,18 +5,18 @@
 - **Name:** SettleTag
 - **Location:** `outputs/settletag` in this task workspace
 - **Purpose:** One-time MUSD invoices with direct merchant settlement and onchain receipts.
-- **Current stage:** WAVE 2 LIVE TESTNET (v2 contract verified and trove-funded payment proven; public web update pending)
-- **Status:** V2 is deployed at `0x7eDcC1223154413E314DD071d6Fb0E0a42A71A17`; both contract sources are explorer verified. A 1 MUSD v2 invoice was paid from an existing Mezo trove in one transaction with 0.995 MUSD to merchant and 0.005 MUSD to treasury. The new address is recorded locally and still needs a GitHub/Vercel release. Independent merchant use remains unverified.
-- **Last updated:** 2026-10-31
+- **Current stage:** WAVE 2 LIVE TESTNET (v2 contract verified, trove-funded payment proven, frontend published)
+- **Status:** V2 is deployed at `0x7eDcC1223154413E314DD071d6Fb0E0a42A71A17`; both contract sources are explorer verified. A 1 MUSD v2 invoice was paid from an existing Mezo trove in one transaction with 0.995 MUSD to merchant and 0.005 MUSD to treasury. Commit `3faa0ac` is on GitHub, and the v2 frontend built and was aliased on Vercel. Independent merchant use remains unverified.
+- **Last updated:** 2026-11-01
 
 ## Git State
 
 - **Branch:** `master` (local repository).
-- **HEAD:** Local live-testnet milestone committed; check `git log -1` for the current hash.
+- **HEAD:** Published live-testnet milestone `3faa0ac`; check `git log -1` for any subsequent context update.
 - **Working tree:** Recheck on continuation. Local secrets and `.env.local` are ignored.
-- **Remote:** Public GitHub repository `https://github.com/0xNexuz/settletag`; `master` was at `1e57e14` before the v2 deployment record and live evidence update. Recheck after publication.
-- **Web:** Vercel project `xreyys-projects/settletag`; production alias `https://settletag.vercel.app`, deployment `dpl_HfkV5EC8uccz5pQVPjoZLZGYcKHH` Ready at release check.
-- **Last verified milestone:** V2 deployment, v1/v2 source verification, and one real trove-funded settlement passed on Mezo testnet. Local tests and build passed after recording the deployment. The local browser rendered the existing active trove at about 154.73% collateral ratio. The production web deployment with the v2 address still needs verification; new merchant signing in the public UI remains unverified.
+- **Remote:** Public GitHub repository `https://github.com/0xNexuz/settletag`; `master` includes commit `3faa0ac` with the v2 deployment record and live evidence.
+- **Web:** Vercel project `xreyys-projects/settletag`; production alias `https://settletag.vercel.app`, deployment `dpl_95v8v1cUSZvyv3gFvEP4WEUACzsV` Ready and aliased after the v2 build.
+- **Last verified milestone:** V2 deployment, v1/v2 source verification, and one real trove-funded settlement passed on Mezo testnet. Local tests and build passed. Vercel rebuilt the v2 source and returned Ready with the production alias; a separate HTTP/browser smoke check from this environment ended in connection reset, so opening the public invoice in a browser remains unverified. New merchant signing in the public UI remains unverified.
 
 ## Approved Scope and Decisions
 
@@ -160,10 +160,10 @@
 - **Alternatives:** App-only `withdrawMUSD` then pay (kept as the v1 path, three transactions); SettleTag holding troves for users (rejected: custodial).
 - **Risk accepted:** Anyone who sees a payer's signed request before it is used can submit it directly to Mezo (for gas only), leaving the borrowed MUSD in SettleTag and the invoice unpaid; the owner returns it with `returnStrandedMUSD`. Signatures expire after 20 minutes.
 - **Hardening after review:** `receive()` accepting only zero-value calls (Mezo's ActivePool callback); invoice IDs derived from merchant and salt; share links carry the contract address and ambiguous lookups are refused; 90-day invoice cap; treasury cannot be MUSD or SettleTag; merchants counted on first payment by someone else; app blocks draws in Recovery Mode, checks the system ratio, reads Mezo's signing domain before signing, and warns instead of silently falling back to v1.
-- **Status:** V2 deployed; v1/v2 sources verified; one existing-trove draw and invoice settlement proved on Mezo testnet. Public web release with the v2 address remains to be checked. Independent third-party use remains outstanding.
+- **Status:** V2 deployed; v1/v2 sources verified; one existing-trove draw and invoice settlement proved on Mezo testnet. V2 frontend published to Vercel; public browser smoke check remains outstanding. Independent third-party use remains outstanding.
 
 ## Next Action
 
-1. Publish the v2 deployment record and technical evidence to GitHub; verify the resulting Vercel production build uses v2 and opens the paid v2 invoice.
+1. Open the paid v2 invoice in the public browser and verify its complete UI flow; Vercel reports Ready and aliased, but this environment's HTTP request reset.
 2. Arrange independent merchant and payer testing; count only users outside the project wallets.
 3. Keep the original testnet borrow position open; verify its live state before any repayment or withdrawal.
