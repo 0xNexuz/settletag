@@ -1,6 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700;800&display=swap');
 .funding-help{display:inline-block;margin:10px 0 0 12px}
 .send-review{margin-top:15px;padding:14px;border:1px solid #d98c37;background:#fff5df;font-size:12px;overflow-wrap:anywhere}.send-review p{line-height:1.5}.send-review .full{margin-top:10px}
+.head-actions{display:flex;align-items:center;gap:16px;min-width:0}.header-wallet{border:1px solid #f5c47b;background:#fff4d9;color:#193b3b;border-radius:3px;min-height:44px;padding:7px 12px;font-size:12px;font-weight:800;white-space:nowrap}.header-wallet:hover{background:#fff}.borrow-eligibility{background:#f4f8f3;border-left:3px solid #d98c37;padding:10px 12px;color:#385147;font-size:12px;line-height:1.5;margin:12px 0 2px}.payment-receipt{margin-top:18px;padding:16px;border:2px solid #19805c;background:#e8f5eb;line-height:1.5}.payment-receipt strong{color:#15583f;font-size:16px}.payment-receipt p{margin:8px 0;font-size:13px}.payment-receipt a{font-size:13px;font-weight:700;text-decoration:underline;color:#15583f}button:disabled{cursor:not-allowed}.browser-wallet-card{background:#eff8f0}
+@media(max-width:730px){.brand-row{padding:0 12px;gap:8px}.brand{font-size:17px;gap:6px}.head-actions{gap:6px}.header-wallet{font-size:11px;padding:6px 8px;min-height:44px;max-width:48vw;overflow:hidden;text-overflow:ellipsis}.brand-tile{width:27px;height:27px}}
 
 .journey{margin-top:22px;border:1px solid #9eb7a8;background:#f4f8f3;box-shadow:4px 4px 0 #183c3820}
 .journey-heading{display:flex;align-items:baseline;justify-content:space-between;gap:14px;padding:15px 17px;border-bottom:1px solid #b9ccbd}

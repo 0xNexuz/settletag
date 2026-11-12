@@ -74,7 +74,7 @@ npm run verify:testnet         # verifies v1 and v2 on explorer.test.mezo.org
 
 ## Test wallet and faucet
 
-The Wallet sheet can create a dedicated Mezo testnet wallet in your browser. Enter a unique password of at least 12 characters, save the recovery phrase shown once, and download the encrypted backup. The encrypted key stays in this browser's local storage; the password and phrase are never sent to SettleTag. You can also connect an existing browser wallet on Mezo testnet.
+Use **Connect wallet** in the top bar or Invoice sheet to connect MetaMask on Mezo testnet. On Android, open SettleTag in MetaMask's browser. Previously authorized browser wallets reconnect when the page opens, and account or network changes refresh the active account. The Wallet sheet also offers an optional local test wallet: enter a unique password of at least 12 characters, save the recovery phrase shown once, and download the encrypted backup. Its encrypted key stays in this browser's local storage; the password and phrase are never sent to SettleTag.
 
 Request test BTC at the [official Mezo faucet](https://faucet.test.mezo.org/). With test BTC you can open a trove and borrow MUSD from the Trove sheet, or borrow while paying an invoice. For a small amount without a loan, swap test BTC for MUSD in [Mezo testnet](https://testnet.mezo.org/). Do not send mainnet funds to a test wallet.
 

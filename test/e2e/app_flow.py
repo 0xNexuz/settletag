@@ -3,7 +3,7 @@
 Start `node test/e2e/sim-chain.js`, then Vite twice (see test/e2e/README.md), then run:
     python3 test/e2e/app_flow.py <screenshot-dir>
 """
-import json, sys, urllib.request
+import json, os, sys, urllib.request
 from pathlib import Path
 from playwright.sync_api import sync_playwright, expect
 
@@ -66,7 +66,7 @@ def load_invoice(page, invoice_id):
     act(page, '#lookup', 'Invoice loaded')
 
 with sync_playwright() as p:
-    browser = p.chromium.launch()
+    browser = p.chromium.launch(**({'channel': os.environ['PLAYWRIGHT_CHANNEL']} if os.getenv('PLAYWRIGHT_CHANNEL') else {}))
 
     # ---------- v2 contract: fees, trove-funded settlement, Pro plan ----------
     m_ctx, merchant, m_addr, m_errors = new_wallet(browser, V2_APP, btc=1)
@@ -108,7 +108,7 @@ with sync_playwright() as p:
 
     inv3 = create_invoice(merchant, 10)
     load_invoice(payer, inv3)
-    act(payer, '#pay', 'MUSD paid to the merchant')
+    act(payer, '#pay', 'Paid. Your onchain receipt is below.')
     check('wallet payment settles invoice', payer.inner_text('#detail-funding') == 'Wallet MUSD')
 
     payer.click('.sheet-tab[data-view="trove"]')
